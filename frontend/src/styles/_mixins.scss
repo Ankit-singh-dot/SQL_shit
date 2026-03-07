@@ -1,0 +1,71 @@
+@use 'variables' as *;
+
+// Responsive breakpoint mixins — mobile first
+@mixin sm {
+    @media (min-width: $bp-sm) {
+        @content;
+    }
+}
+
+@mixin md {
+    @media (min-width: $bp-md) {
+        @content;
+    }
+}
+
+@mixin lg {
+    @media (min-width: $bp-lg) {
+        @content;
+    }
+}
+
+@mixin xl {
+    @media (min-width: $bp-xl) {
+        @content;
+    }
+}
+
+// Button base
+@mixin btn($bg: $color-black, $fg: $color-white) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: $bg;
+    color: $fg;
+    border: 1px solid $bg;
+    border-radius: $radius-sm;
+    font-size: $font-size-sm;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    min-height: 44px; // touch-friendly
+
+    &:hover {
+        opacity: 0.85;
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+
+// Input base
+@mixin input-field {
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    font-size: $font-size-base;
+    font-family: $font-family;
+    min-height: 44px;
+    background: $color-white;
+    color: $color-text;
+
+    &:focus {
+        outline: 2px solid $color-black;
+        outline-offset: -1px;
+    }
+}

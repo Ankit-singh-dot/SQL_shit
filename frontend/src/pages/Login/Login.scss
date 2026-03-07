@@ -1,0 +1,78 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.auth {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 60px);
+    padding: $spacing-md;
+
+    &__form {
+        width: 100%;
+        max-width: 400px;
+        padding: $spacing-xl;
+        border: 1px solid $color-border;
+        border-radius: $radius-md;
+
+        @include md {
+            padding: $spacing-2xl;
+        }
+    }
+
+    &__title {
+        font-size: $font-size-2xl;
+        font-weight: 700;
+        margin-bottom: $spacing-xs;
+    }
+
+    &__subtitle {
+        color: $color-muted;
+        font-size: $font-size-sm;
+        margin-bottom: $spacing-xl;
+    }
+
+    &__error {
+        padding: $spacing-sm $spacing-md;
+        background: lighten($color-hard, 30%);
+        border: 1px solid $color-hard;
+        border-radius: $radius-sm;
+        color: darken($color-hard, 15%);
+        font-size: $font-size-sm;
+        margin-bottom: $spacing-md;
+    }
+
+    &__field {
+        margin-bottom: $spacing-md;
+    }
+
+    &__label {
+        display: block;
+        font-size: $font-size-sm;
+        font-weight: 500;
+        margin-bottom: $spacing-xs;
+    }
+
+    &__input {
+        @include input-field;
+    }
+
+    &__submit {
+        @include btn($color-black, $color-white);
+        width: 100%;
+        margin-top: $spacing-sm;
+    }
+
+    &__footer {
+        text-align: center;
+        margin-top: $spacing-lg;
+        font-size: $font-size-sm;
+        color: $color-muted;
+
+        a {
+            color: $color-black;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+    }
+}

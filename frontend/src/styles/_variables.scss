@@ -1,0 +1,50 @@
+// Colors — black & white minimal
+$color-black: #000;
+$color-white: #fff;
+$color-gray-100: #f5f5f5;
+$color-gray-200: #e5e5e5;
+$color-gray-300: #d4d4d4;
+$color-gray-400: #a3a3a3;
+$color-gray-500: #737373;
+$color-gray-600: #525252;
+$color-gray-700: #404040;
+$color-gray-800: #262626;
+$color-gray-900: #171717;
+
+$color-bg: $color-white;
+$color-text: $color-gray-900;
+$color-border: $color-gray-300;
+$color-muted: $color-gray-500;
+
+// Difficulty badge colors
+$color-easy: #22c55e;
+$color-medium: #f59e0b;
+$color-hard: #ef4444;
+
+// Spacing
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+$spacing-2xl: 48px;
+
+// Font
+$font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+$font-size-sm: 0.875rem;
+$font-size-base: 1rem;
+$font-size-lg: 1.125rem;
+$font-size-xl: 1.25rem;
+$font-size-2xl: 1.5rem;
+$font-size-3xl: 2rem;
+
+// Border radius
+$radius-sm: 4px;
+$radius-md: 8px;
+$radius-lg: 12px;
+
+// Breakpoints — mobile-first
+$bp-sm: 320px;
+$bp-md: 641px;
+$bp-lg: 1024px;
+$bp-xl: 1281px;

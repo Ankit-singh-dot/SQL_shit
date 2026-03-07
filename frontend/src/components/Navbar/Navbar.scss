@@ -1,0 +1,95 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.navbar {
+    background: $color-black;
+    color: $color-white;
+    border-bottom: 1px solid $color-gray-800;
+
+    &__container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: $spacing-sm $spacing-md;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
+    &__brand {
+        font-size: $font-size-lg;
+        font-weight: 700;
+        color: $color-white;
+        letter-spacing: -0.5px;
+    }
+
+    &__toggle {
+        display: block;
+        background: none;
+        border: none;
+        color: $color-white;
+        font-size: $font-size-xl;
+        cursor: pointer;
+        min-width: 44px;
+        min-height: 44px;
+
+        @include md {
+            display: none;
+        }
+    }
+
+    &__menu {
+        display: none;
+        flex-basis: 100%;
+        flex-direction: column;
+        gap: $spacing-sm;
+        padding-top: $spacing-sm;
+
+        &--open {
+            display: flex;
+        }
+
+        @include md {
+            display: flex;
+            flex-basis: auto;
+            flex-direction: row;
+            align-items: center;
+            gap: $spacing-md;
+            padding-top: 0;
+        }
+    }
+
+    &__link {
+        color: $color-gray-300;
+        font-size: $font-size-sm;
+        padding: $spacing-sm 0;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+
+        &:hover {
+            color: $color-white;
+        }
+    }
+
+    &__user {
+        color: $color-gray-400;
+        font-size: $font-size-sm;
+    }
+
+    &__btn {
+        @include btn($color-white, $color-black);
+        font-size: $font-size-sm;
+        padding: $spacing-xs $spacing-md;
+
+        &--outline {
+            background: transparent;
+            color: $color-white;
+            border-color: $color-gray-600;
+
+            &:hover {
+                background: $color-gray-800;
+            }
+        }
+    }
+}

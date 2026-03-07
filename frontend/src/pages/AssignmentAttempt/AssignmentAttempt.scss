@@ -1,0 +1,347 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.attempt {
+    max-width: 1400px;
+    margin: 0 auto;
+
+    &__loading,
+    &__error {
+        text-align: center;
+        padding: $spacing-2xl;
+        color: $color-muted;
+        font-size: $font-size-lg;
+    }
+
+    &__error {
+        color: $color-hard;
+    }
+
+    // Mobile tabs
+    &__tabs {
+        display: flex;
+        border-bottom: 1px solid $color-border;
+        overflow-x: auto;
+
+        @include lg {
+            display: none;
+        }
+    }
+
+    &__tab {
+        flex: 1;
+        padding: $spacing-sm $spacing-md;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        font-size: $font-size-sm;
+        font-family: $font-family;
+        cursor: pointer;
+        min-height: 44px;
+        white-space: nowrap;
+        color: $color-muted;
+
+        &--active {
+            color: $color-black;
+            border-bottom-color: $color-black;
+            font-weight: 600;
+        }
+    }
+
+    // Layout
+    &__layout {
+        display: flex;
+        flex-direction: column;
+
+        @include lg {
+            flex-direction: row;
+            min-height: calc(100vh - 60px);
+        }
+    }
+
+    &__left,
+    &__right {
+        @include lg {
+            width: 50%;
+            overflow-y: auto;
+        }
+    }
+
+    &__left {
+        @include lg {
+            border-right: 1px solid $color-border;
+        }
+    }
+
+    // Panels
+    &__panel {
+        display: none;
+        padding: $spacing-md;
+
+        @include md {
+            padding: $spacing-lg;
+        }
+
+        &--active {
+            display: block;
+        }
+
+        // Show all panels on desktop
+        @include lg {
+            display: block;
+            border-bottom: 1px solid $color-border;
+
+            &:last-child {
+                border-bottom: none;
+            }
+        }
+
+        &--always {
+            display: block;
+
+            @include lg {
+                display: block;
+            }
+        }
+    }
+
+    &__panel-header {
+        display: flex;
+        align-items: center;
+        gap: $spacing-md;
+        margin-bottom: $spacing-md;
+    }
+
+    &__back {
+        font-size: $font-size-sm;
+        color: $color-muted;
+
+        &:hover {
+            color: $color-black;
+        }
+    }
+
+    &__badge {
+        display: inline-block;
+        padding: 2px $spacing-sm;
+        border-radius: $radius-sm;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+
+        &--easy {
+            background: lighten($color-easy, 35%);
+            color: darken($color-easy, 15%);
+        }
+
+        &--medium {
+            background: lighten($color-medium, 30%);
+            color: darken($color-medium, 15%);
+        }
+
+        &--hard {
+            background: lighten($color-hard, 25%);
+            color: darken($color-hard, 15%);
+        }
+    }
+
+    &__title {
+        font-size: $font-size-xl;
+        font-weight: 700;
+        margin-bottom: $spacing-sm;
+
+        @include md {
+            font-size: $font-size-2xl;
+        }
+    }
+
+    &__desc {
+        color: $color-gray-600;
+        font-size: $font-size-base;
+        line-height: 1.6;
+        margin-bottom: $spacing-lg;
+    }
+
+    // Hint
+    &__hint-section {
+        margin-top: $spacing-md;
+    }
+
+    &__hint-btn {
+        @include btn($color-gray-800, $color-white);
+        width: 100%;
+
+        @include md {
+            width: auto;
+        }
+    }
+
+    &__hint-box {
+        margin-top: $spacing-md;
+        padding: $spacing-md;
+        background: $color-gray-100;
+        border: 1px solid $color-border;
+        border-radius: $radius-sm;
+        font-size: $font-size-sm;
+        line-height: 1.6;
+    }
+
+    // Section titles
+    &__section-title {
+        font-size: $font-size-base;
+        font-weight: 600;
+        margin-bottom: $spacing-md;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: $font-size-sm;
+    }
+
+    &__row-count {
+        font-weight: 400;
+        color: $color-muted;
+        text-transform: none;
+        letter-spacing: 0;
+    }
+
+    // Tables
+    &__table-block {
+        margin-bottom: $spacing-lg;
+    }
+
+    &__table-name {
+        font-size: $font-size-sm;
+        font-weight: 600;
+        margin-bottom: $spacing-sm;
+        font-family: 'Menlo', monospace;
+        background: $color-gray-900;
+        color: $color-white;
+        padding: $spacing-xs $spacing-sm;
+        border-radius: $radius-sm $radius-sm 0 0;
+        display: inline-block;
+    }
+
+    &__table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    &__table {
+        width: 100%;
+        border: 1px solid $color-border;
+        font-size: $font-size-sm;
+
+        th,
+        td {
+            padding: $spacing-sm $spacing-md;
+            text-align: left;
+            border-bottom: 1px solid $color-gray-200;
+            white-space: nowrap;
+        }
+
+        th {
+            background: $color-gray-100;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        tbody tr:hover {
+            background: $color-gray-100;
+        }
+
+        &--result {
+            th {
+                background: $color-gray-900;
+                color: $color-white;
+            }
+        }
+    }
+
+    &__col-type {
+        display: block;
+        font-size: 0.7rem;
+        color: $color-muted;
+        font-weight: 400;
+    }
+
+    // Editor
+    &__editor-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: $spacing-sm;
+    }
+
+    &__execute-btn {
+        @include btn($color-black, $color-white);
+        min-width: 120px;
+    }
+
+    &__editor-wrap {
+        border: 1px solid $color-border;
+        border-radius: $radius-sm;
+        overflow: hidden;
+    }
+
+    // Query error
+    &__query-error {
+        padding: $spacing-md;
+        background: lighten($color-hard, 30%);
+        border: 1px solid $color-hard;
+        border-radius: $radius-sm;
+        color: darken($color-hard, 15%);
+        font-size: $font-size-sm;
+        font-family: 'Menlo', monospace;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    &__empty-result,
+    &__placeholder {
+        color: $color-muted;
+        font-size: $font-size-sm;
+        text-align: center;
+        padding: $spacing-xl;
+    }
+
+    // Attempts
+    &__attempts-list {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-sm;
+    }
+
+    &__attempt-item {
+        padding: $spacing-sm $spacing-md;
+        border: 1px solid $color-gray-200;
+        border-radius: $radius-sm;
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-xs;
+
+        @include md {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+        }
+    }
+
+    &__attempt-query {
+        font-size: $font-size-sm;
+        color: $color-gray-700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+
+        @include md {
+            max-width: 400px;
+        }
+    }
+
+    &__attempt-time {
+        font-size: 0.75rem;
+        color: $color-muted;
+        white-space: nowrap;
+    }
+}

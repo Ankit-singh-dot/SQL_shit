@@ -1,0 +1,126 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.assignment-list {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: $spacing-md;
+
+    @include md {
+        padding: $spacing-xl;
+    }
+
+    &__header {
+        margin-bottom: $spacing-xl;
+    }
+
+    &__title {
+        font-size: $font-size-2xl;
+        font-weight: 700;
+        margin-bottom: $spacing-xs;
+
+        @include md {
+            font-size: $font-size-3xl;
+        }
+    }
+
+    &__subtitle {
+        color: $color-muted;
+        font-size: $font-size-sm;
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: $spacing-md;
+
+        @include md {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        @include lg {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    &__loading,
+    &__error,
+    &__empty {
+        text-align: center;
+        padding: $spacing-2xl;
+        color: $color-muted;
+        font-size: $font-size-lg;
+    }
+
+    &__error {
+        color: $color-hard;
+    }
+}
+
+.assignment-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    padding: $spacing-lg;
+    transition: border-color 0.15s;
+    min-height: 160px;
+
+    &:hover {
+        border-color: $color-black;
+    }
+
+    &__header {
+        margin-bottom: $spacing-sm;
+    }
+
+    &__badge {
+        display: inline-block;
+        padding: 2px $spacing-sm;
+        border-radius: $radius-sm;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+
+        &--easy {
+            background: lighten($color-easy, 35%);
+            color: darken($color-easy, 15%);
+        }
+
+        &--medium {
+            background: lighten($color-medium, 30%);
+            color: darken($color-medium, 15%);
+        }
+
+        &--hard {
+            background: lighten($color-hard, 25%);
+            color: darken($color-hard, 15%);
+        }
+    }
+
+    &__title {
+        font-size: $font-size-lg;
+        font-weight: 600;
+        margin-bottom: $spacing-sm;
+    }
+
+    &__desc {
+        color: $color-muted;
+        font-size: $font-size-sm;
+        flex: 1;
+        line-height: 1.5;
+    }
+
+    &__footer {
+        margin-top: $spacing-md;
+        padding-top: $spacing-sm;
+        border-top: 1px solid $color-gray-200;
+    }
+
+    &__action {
+        font-size: $font-size-sm;
+        font-weight: 500;
+        color: $color-black;
+    }
+}
