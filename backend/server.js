@@ -8,7 +8,18 @@ const app = express();
 
 // Manual CORS middleware (Express 5 compatible)
 app.use((req, res, next) => {
-  res.set('Access-Control-Allow-Origin', '*');
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:4000',
+    'https://sql-shit.vercel.app',
+    'https://grand-puffpuff-04a88e.netlify.app',
+  ];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.set('Access-Control-Allow-Origin', origin);
+  } else {
+    res.set('Access-Control-Allow-Origin', '*');
+  }
   res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') {
@@ -18,6 +29,22 @@ app.use((req, res, next) => {
   next();
 });
 app.use(express.json());
+
+// Lazy DB connection middleware (connects once on first request)
+let dbConnected = false;
+app.use(async (req, res, next) => {
+  if (!dbConnected) {
+    try {
+      await connectMongo();
+      connectPG();
+      dbConnected = true;
+    } catch (err) {
+      console.error('DB connection error:', err.message);
+      return res.status(500).json({ error: 'Database connection failed' });
+    }
+  }
+  next();
+});
 
 // Routes
 app.use('/api/assignments', require('./routes/assignments'));
@@ -30,26 +57,13 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-const PORT = process.env.PORT || 4000;
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 4000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
 
-const start = async () => {
-  try {
-    await connectMongo();
-    console.log('MongoDB connected');
-
-    const pgPool = connectPG();
-    // Test PG connection
-    const client = await pgPool.connect();
-    console.log('PostgreSQL connected');
-    client.release();
-
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  } catch (err) {
-    console.error('Failed to start server:', err.message);
-    process.exit(1);
-  }
-};
-
-start();
+// Export for Vercel
+module.exports = app;
