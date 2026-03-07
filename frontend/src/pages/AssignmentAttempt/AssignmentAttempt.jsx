@@ -4,7 +4,7 @@ import Editor from '@monaco-editor/react';
 import axios from 'axios';
 import './AssignmentAttempt.scss';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const API = import.meta.env.VITE_API_URL || 'https://sql-shit.vercel.app/api';
 
 const AssignmentAttempt = () => {
     const { id } = useParams();
