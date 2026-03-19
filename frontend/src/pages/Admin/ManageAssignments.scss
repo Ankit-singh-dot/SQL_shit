@@ -1,0 +1,171 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.manage {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: $spacing-lg $spacing-md;
+
+    &__loading,
+    &__error {
+        text-align: center;
+        padding: $spacing-2xl;
+        color: $color-muted;
+    }
+
+    &__error {
+        color: $color-hard;
+    }
+
+    &__header {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-md;
+        margin-bottom: $spacing-xl;
+
+        @include md {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        h1 {
+            font-size: $font-size-2xl;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+    }
+
+    &__actions {
+        display: flex;
+        gap: $spacing-sm;
+    }
+
+    &__btn {
+        @include btn;
+        text-decoration: none;
+
+        &--outline {
+            background: transparent;
+            color: $color-black;
+            border-color: $color-border;
+
+            &:hover {
+                background: $color-gray-100;
+            }
+        }
+    }
+
+    &__empty {
+        text-align: center;
+        padding: $spacing-2xl;
+        color: $color-muted;
+
+        a {
+            color: $color-black;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+    }
+
+    &__table-wrap {
+        overflow-x: auto;
+        border: 1px solid $color-border;
+        border-radius: $radius-md;
+    }
+
+    &__table {
+        width: 100%;
+        font-size: $font-size-sm;
+
+        th,
+        td {
+            padding: $spacing-sm $spacing-md;
+            text-align: left;
+            border-bottom: 1px solid $color-gray-200;
+        }
+
+        th {
+            font-weight: 600;
+            color: $color-muted;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            background: $color-gray-100;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+    }
+
+    &__title-cell {
+        font-weight: 500;
+        max-width: 250px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__badge {
+        display: inline-block;
+        padding: 2px $spacing-sm;
+        border-radius: $radius-sm;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+
+        &--easy {
+            background: rgba($color-easy, 0.1);
+            color: darken($color-easy, 10%);
+        }
+
+        &--medium {
+            background: rgba($color-medium, 0.1);
+            color: darken($color-medium, 15%);
+        }
+
+        &--hard {
+            background: rgba($color-hard, 0.1);
+            color: darken($color-hard, 10%);
+        }
+    }
+
+    &__actions-cell {
+        display: flex;
+        gap: $spacing-sm;
+        white-space: nowrap;
+    }
+
+    &__action-btn {
+        padding: $spacing-xs $spacing-sm;
+        font-size: 0.75rem;
+        font-weight: 500;
+        border: 1px solid $color-border;
+        border-radius: $radius-sm;
+        background: transparent;
+        color: $color-text;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+        transition: all 0.15s;
+
+        &:hover {
+            background: $color-gray-100;
+            border-color: $color-gray-400;
+        }
+
+        &--danger {
+            color: $color-hard;
+            border-color: rgba($color-hard, 0.3);
+
+            &:hover {
+                background: rgba($color-hard, 0.05);
+                border-color: $color-hard;
+            }
+        }
+    }
+}

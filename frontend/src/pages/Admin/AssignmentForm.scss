@@ -1,0 +1,249 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.aform {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: $spacing-lg $spacing-md;
+
+    &__loading {
+        text-align: center;
+        padding: $spacing-2xl;
+        color: $color-muted;
+    }
+
+    &__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: $spacing-xl;
+
+        h1 {
+            font-size: $font-size-2xl;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+    }
+
+    &__back {
+        font-size: $font-size-sm;
+        color: $color-muted;
+
+        &:hover {
+            color: $color-black;
+        }
+    }
+
+    &__error {
+        background: rgba($color-hard, 0.08);
+        color: $color-hard;
+        padding: $spacing-sm $spacing-md;
+        border-radius: $radius-sm;
+        margin-bottom: $spacing-md;
+        font-size: $font-size-sm;
+    }
+
+    &__form {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-xl;
+    }
+
+    &__section {
+        border: 1px solid $color-border;
+        border-radius: $radius-md;
+        padding: $spacing-lg;
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-md;
+
+        h2 {
+            font-size: $font-size-lg;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        h3 {
+            font-size: $font-size-sm;
+            font-weight: 600;
+            color: $color-muted;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: $spacing-sm;
+        }
+    }
+
+    &__section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    &__label {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-xs;
+        font-size: $font-size-sm;
+        font-weight: 500;
+        color: $color-text;
+    }
+
+    &__input {
+        @include input-field;
+    }
+
+    &__textarea {
+        @include input-field;
+        resize: vertical;
+        min-height: 80px;
+
+        &--code {
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: $font-size-sm;
+        }
+    }
+
+    &__select {
+        @include input-field;
+        cursor: pointer;
+    }
+
+    // ── Table builder ──
+
+    &__table-block {
+        border: 1px solid $color-gray-200;
+        border-radius: $radius-md;
+        padding: $spacing-md;
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-md;
+        background: $color-gray-100;
+    }
+
+    &__table-header {
+        display: flex;
+        gap: $spacing-sm;
+        align-items: center;
+    }
+
+    &__columns {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-sm;
+    }
+
+    &__col-row {
+        display: flex;
+        gap: $spacing-sm;
+        align-items: center;
+
+        .aform__input {
+            flex: 2;
+        }
+
+        .aform__select {
+            flex: 1;
+        }
+    }
+
+    &__data-wrap {
+        overflow-x: auto;
+    }
+
+    &__data-table {
+        width: 100%;
+        font-size: $font-size-sm;
+
+        th,
+        td {
+            padding: $spacing-xs;
+            text-align: left;
+        }
+
+        th {
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: $color-muted;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+    }
+
+    &__cell-input {
+        @include input-field;
+        min-height: 36px;
+        padding: $spacing-xs $spacing-sm;
+        font-size: $font-size-sm;
+        min-width: 80px;
+    }
+
+    // ── Buttons ──
+
+    &__add-btn {
+        @include btn(transparent, $color-black);
+        border-color: $color-border;
+        font-size: $font-size-sm;
+        align-self: flex-start;
+
+        &:hover {
+            background: $color-gray-100;
+        }
+
+        &--small {
+            min-height: 32px;
+            padding: $spacing-xs $spacing-sm;
+            font-size: 0.75rem;
+        }
+    }
+
+    &__remove-btn {
+        @include btn(transparent, $color-hard);
+        border-color: rgba($color-hard, 0.3);
+        font-size: 0.75rem;
+        min-height: 36px;
+        white-space: nowrap;
+
+        &:hover {
+            background: rgba($color-hard, 0.05);
+        }
+    }
+
+    &__icon-btn {
+        background: none;
+        border: 1px solid $color-border;
+        border-radius: $radius-sm;
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: $color-muted;
+        font-size: 0.75rem;
+        transition: all 0.15s;
+        flex-shrink: 0;
+
+        &:hover {
+            color: $color-hard;
+            border-color: $color-hard;
+        }
+    }
+
+    &__hint-row {
+        display: flex;
+        gap: $spacing-sm;
+        align-items: center;
+    }
+
+    &__footer {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    &__submit {
+        @include btn;
+        font-size: $font-size-base;
+        padding: $spacing-sm $spacing-xl;
+    }
+}

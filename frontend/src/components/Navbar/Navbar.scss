@@ -70,6 +70,14 @@
         &:hover {
             color: $color-white;
         }
+
+        &--admin {
+            font-weight: 600;
+            border: 1px solid $color-gray-600;
+            padding: $spacing-xs $spacing-md;
+            border-radius: $radius-sm;
+            min-height: auto;
+        }
     }
 
     &__user {
