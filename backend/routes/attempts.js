@@ -1,21 +1,6 @@
 const router = require('express').Router();
-const jwt = require('jsonwebtoken');
 const Attempt = require('../models/Attempt');
-
-// Middleware to verify token
-const auth = (req, res, next) => {
-    const header = req.headers.authorization;
-    if (!header) return res.status(401).json({ error: 'No token provided.' });
-
-    const token = header.split(' ')[1];
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
-        req.userId = decoded.id;
-        next();
-    } catch {
-        res.status(401).json({ error: 'Invalid token.' });
-    }
-};
+const { auth } = require('../middleware/auth');
 
 // POST /api/attempts — save attempt
 router.post('/', auth, async (req, res) => {
