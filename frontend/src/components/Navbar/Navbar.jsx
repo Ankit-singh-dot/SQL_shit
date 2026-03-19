@@ -39,6 +39,11 @@ const Navbar = () => {
                     </Link>
                     {user ? (
                         <>
+                            {user.role === 'admin' && (
+                                <Link to="/admin" className="navbar__link navbar__link--admin" onClick={() => setMenuOpen(false)}>
+                                    Admin
+                                </Link>
+                            )}
                             <span className="navbar__user">{user.username}</span>
                             <button className="navbar__btn navbar__btn--outline" onClick={handleLogout}>
                                 Logout
