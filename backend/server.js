@@ -52,6 +52,7 @@ app.use('/api/execute', require('./routes/execute'));
 app.use('/api/hint', require('./routes/hint'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/attempts', require('./routes/attempts'));
+app.use('/api/admin', require('./routes/admin'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
