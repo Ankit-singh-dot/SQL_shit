@@ -19,6 +19,14 @@ const assignmentSchema = new mongoose.Schema({
         enum: ['Easy', 'Medium', 'Hard'],
         default: 'Easy',
     },
+    category: {
+        type: String,
+        enum: ['Basics', 'Filtering', 'Aggregation', 'Joins', 'Subqueries', 'Advanced'],
+        default: 'Basics',
+    },
+    timeLimit: { type: Number, default: 0 }, // seconds, 0 = no timer
+    tableMode: { type: String, enum: ['custom', 'existing'], default: 'custom' },
+    sharedTableNames: [String], // when tableMode is 'existing', references shared tables by name
     tables: [tableSchema],
     expectedQuery: { type: String }, // reference solution (not shown to user)
     hints: [String],
