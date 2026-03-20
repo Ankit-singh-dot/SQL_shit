@@ -37,14 +37,28 @@ const Navbar = () => {
                     <Link to="/" className="navbar__link" onClick={() => setMenuOpen(false)}>
                         Assignments
                     </Link>
+                    <Link to="/leaderboard" className="navbar__link" onClick={() => setMenuOpen(false)}>
+                        🏆 Leaderboard
+                    </Link>
+                    <Link to="/sandbox" className="navbar__link" onClick={() => setMenuOpen(false)}>
+                        🧪 Sandbox
+                    </Link>
                     {user ? (
                         <>
+                            <Link to="/bookmarks" className="navbar__link" onClick={() => setMenuOpen(false)}>
+                                ♥ Bookmarks
+                            </Link>
+                            <Link to="/history" className="navbar__link" onClick={() => setMenuOpen(false)}>
+                                📜 History
+                            </Link>
                             {user.role === 'admin' && (
                                 <Link to="/admin" className="navbar__link navbar__link--admin" onClick={() => setMenuOpen(false)}>
                                     Admin
                                 </Link>
                             )}
-                            <span className="navbar__user">{user.username}</span>
+                            <Link to="/profile" className="navbar__link navbar__link--user" onClick={() => setMenuOpen(false)}>
+                                {user.username}
+                            </Link>
                             <button className="navbar__btn navbar__btn--outline" onClick={handleLogout}>
                                 Logout
                             </button>
