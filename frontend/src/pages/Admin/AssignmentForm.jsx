@@ -22,6 +22,10 @@ const AssignmentForm = () => {
         title: '',
         description: '',
         difficulty: 'Easy',
+        category: 'Basics',
+        timeLimit: 0,
+        tableMode: 'custom',
+        sharedTableNames: [],
         tables: [emptyTable()],
         expectedQuery: '',
         hints: [''],
@@ -29,6 +33,7 @@ const AssignmentForm = () => {
     const [loading, setLoading] = useState(isEdit);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [sharedTables, setSharedTables] = useState([]);
 
     const token = localStorage.getItem('cipherToken');
     const headers = { Authorization: `Bearer ${token}` };
@@ -49,6 +54,10 @@ const AssignmentForm = () => {
                         title: a.title,
                         description: a.description,
                         difficulty: a.difficulty,
+                        category: a.category || 'Basics',
+                        timeLimit: a.timeLimit || 0,
+                        tableMode: a.tableMode || 'custom',
+                        sharedTableNames: a.sharedTableNames || [],
                         tables: a.tables,
                         expectedQuery: a.expectedQuery || '',
                         hints: a.hints.length > 0 ? a.hints : [''],
@@ -57,6 +66,12 @@ const AssignmentForm = () => {
                 .catch(() => setError('Failed to load assignment'))
                 .finally(() => setLoading(false));
         }
+
+        // Fetch shared tables for the dropdown
+        axios
+            .get(`${API}/admin/tables`, { headers })
+            .then((res) => setSharedTables(res.data))
+            .catch(() => {});
     }, [id, isEdit, navigate]);
 
     // ─── Field handlers ──────────────────
@@ -191,6 +206,10 @@ const AssignmentForm = () => {
         const payload = {
             ...form,
             hints: form.hints.filter((h) => h.trim()),
+            // Only send relevant table data based on mode
+            ...(form.tableMode === 'existing'
+                ? { sharedTableNames: form.sharedTableNames, tables: [] }
+                : { tables: form.tables, sharedTableNames: [] }),
         };
 
         try {
@@ -261,6 +280,34 @@ const AssignmentForm = () => {
                     </label>
 
                     <label className="aform__label">
+                        Category
+                        <select
+                            className="aform__select"
+                            value={form.category}
+                            onChange={(e) => updateField('category', e.target.value)}
+                        >
+                            <option value="Basics">Basics</option>
+                            <option value="Filtering">Filtering</option>
+                            <option value="Aggregation">Aggregation</option>
+                            <option value="Joins">Joins</option>
+                            <option value="Subqueries">Subqueries</option>
+                            <option value="Advanced">Advanced</option>
+                        </select>
+                    </label>
+
+                    <label className="aform__label">
+                        Time Limit (seconds, 0 = no timer)
+                        <input
+                            type="number"
+                            className="aform__input"
+                            value={form.timeLimit}
+                            onChange={(e) => updateField('timeLimit', parseInt(e.target.value) || 0)}
+                            min="0"
+                            step="30"
+                        />
+                    </label>
+
+                    <label className="aform__label">
                         Expected Query (reference solution)
                         <textarea
                             className="aform__textarea aform__textarea--code"
@@ -276,135 +323,200 @@ const AssignmentForm = () => {
                 <div className="aform__section">
                     <div className="aform__section-header">
                         <h2>Tables</h2>
-                        <button type="button" className="aform__add-btn" onClick={addTable}>
-                            + Add Table
+                    </div>
+
+                    {/* Toggle: Existing vs Custom */}
+                    <div className="aform__mode-toggle">
+                        <button
+                            type="button"
+                            className={`aform__mode-btn ${form.tableMode === 'existing' ? 'aform__mode-btn--active' : ''}`}
+                            onClick={() => updateField('tableMode', 'existing')}
+                        >
+                            📋 Use Existing Tables
+                        </button>
+                        <button
+                            type="button"
+                            className={`aform__mode-btn ${form.tableMode === 'custom' ? 'aform__mode-btn--active' : ''}`}
+                            onClick={() => updateField('tableMode', 'custom')}
+                        >
+                            🛠 Create Custom Tables
                         </button>
                     </div>
 
-                    {form.tables.map((table, ti) => (
-                        <div key={ti} className="aform__table-block">
-                            <div className="aform__table-header">
-                                <input
-                                    type="text"
-                                    className="aform__input"
-                                    placeholder="Table name (e.g. employees)"
-                                    value={table.tableName}
-                                    onChange={(e) => updateTableName(ti, e.target.value)}
-                                    required
-                                />
-                                {form.tables.length > 1 && (
-                                    <button
-                                        type="button"
-                                        className="aform__remove-btn"
-                                        onClick={() => removeTable(ti)}
-                                    >
-                                        Remove Table
-                                    </button>
-                                )}
-                            </div>
+                    {/* Existing Tables — Checkbox list */}
+                    {form.tableMode === 'existing' && (
+                        <div className="aform__shared-tables">
+                            {sharedTables.length === 0 ? (
+                                <p className="aform__shared-empty">
+                                    No shared tables yet. <a href="/admin/tables">Create one first →</a>
+                                </p>
+                            ) : (
+                                <>
+                                    <p className="aform__shared-hint">Select tables this assignment will use:</p>
+                                    <div className="aform__shared-grid">
+                                        {sharedTables.map((st) => (
+                                            <label key={st._id} className="aform__shared-item">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={form.sharedTableNames.includes(st.tableName)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            updateField('sharedTableNames', [...form.sharedTableNames, st.tableName]);
+                                                        } else {
+                                                            updateField('sharedTableNames', form.sharedTableNames.filter((n) => n !== st.tableName));
+                                                        }
+                                                    }}
+                                                />
+                                                <div className="aform__shared-info">
+                                                    <strong>{st.displayName || st.tableName}</strong>
+                                                    <span className="aform__shared-tname">{st.tableName}</span>
+                                                    <span className="aform__shared-cols">
+                                                        {st.columns.map((c) => c.name).join(', ')}
+                                                    </span>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
 
-                            {/* Columns */}
-                            <h3>Columns</h3>
-                            <div className="aform__columns">
-                                {table.columns.map((col, ci) => (
-                                    <div key={ci} className="aform__col-row">
+                    {/* Custom Tables — Original table builder */}
+                    {form.tableMode === 'custom' && (
+                        <>
+                            <div className="aform__section-header" style={{ marginTop: '1rem' }}>
+                                <span></span>
+                                <button type="button" className="aform__add-btn" onClick={addTable}>
+                                    + Add Table
+                                </button>
+                            </div>
+                            {form.tables.map((table, ti) => (
+                                <div key={ti} className="aform__table-block">
+                                    <div className="aform__table-header">
                                         <input
                                             type="text"
                                             className="aform__input"
-                                            placeholder="Column name"
-                                            value={col.name}
-                                            onChange={(e) =>
-                                                updateColumn(ti, ci, 'name', e.target.value)
-                                            }
+                                            placeholder="Table name (e.g. employees)"
+                                            value={table.tableName}
+                                            onChange={(e) => updateTableName(ti, e.target.value)}
                                             required
                                         />
-                                        <select
-                                            className="aform__select"
-                                            value={col.type}
-                                            onChange={(e) =>
-                                                updateColumn(ti, ci, 'type', e.target.value)
-                                            }
-                                        >
-                                            {COLUMN_TYPES.map((t) => (
-                                                <option key={t} value={t}>
-                                                    {t}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        {table.columns.length > 1 && (
+                                        {form.tables.length > 1 && (
                                             <button
                                                 type="button"
-                                                className="aform__icon-btn"
-                                                onClick={() => removeColumn(ti, ci)}
-                                                title="Remove column"
+                                                className="aform__remove-btn"
+                                                onClick={() => removeTable(ti)}
                                             >
-                                                ✕
+                                                Remove Table
                                             </button>
                                         )}
                                     </div>
-                                ))}
-                                <button
-                                    type="button"
-                                    className="aform__add-btn aform__add-btn--small"
-                                    onClick={() => addColumn(ti)}
-                                >
-                                    + Column
-                                </button>
-                            </div>
 
-                            {/* Sample Data */}
-                            <h3>Sample Data</h3>
-                            <div className="aform__data-wrap">
-                                <table className="aform__data-table">
-                                    <thead>
-                                        <tr>
-                                            {table.columns.map((col, ci) => (
-                                                <th key={ci}>{col.name || `Col ${ci + 1}`}</th>
-                                            ))}
-                                            <th></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {table.sampleData.map((row, ri) => (
-                                            <tr key={ri}>
-                                                {row.map((cell, ci) => (
-                                                    <td key={ci}>
-                                                        <input
-                                                            type="text"
-                                                            className="aform__cell-input"
-                                                            value={cell}
-                                                            onChange={(e) =>
-                                                                updateCell(ti, ri, ci, e.target.value)
-                                                            }
-                                                        />
-                                                    </td>
-                                                ))}
-                                                <td>
-                                                    {table.sampleData.length > 1 && (
-                                                        <button
-                                                            type="button"
-                                                            className="aform__icon-btn"
-                                                            onClick={() => removeRow(ti, ri)}
-                                                            title="Remove row"
-                                                        >
-                                                            ✕
-                                                        </button>
-                                                    )}
-                                                </td>
-                                            </tr>
+                                    {/* Columns */}
+                                    <h3>Columns</h3>
+                                    <div className="aform__columns">
+                                        {table.columns.map((col, ci) => (
+                                            <div key={ci} className="aform__col-row">
+                                                <input
+                                                    type="text"
+                                                    className="aform__input"
+                                                    placeholder="Column name"
+                                                    value={col.name}
+                                                    onChange={(e) =>
+                                                        updateColumn(ti, ci, 'name', e.target.value)
+                                                    }
+                                                    required
+                                                />
+                                                <select
+                                                    className="aform__select"
+                                                    value={col.type}
+                                                    onChange={(e) =>
+                                                        updateColumn(ti, ci, 'type', e.target.value)
+                                                    }
+                                                >
+                                                    {COLUMN_TYPES.map((t) => (
+                                                        <option key={t} value={t}>
+                                                            {t}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                {table.columns.length > 1 && (
+                                                    <button
+                                                        type="button"
+                                                        className="aform__icon-btn"
+                                                        onClick={() => removeColumn(ti, ci)}
+                                                        title="Remove column"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                )}
+                                            </div>
                                         ))}
-                                    </tbody>
-                                </table>
-                                <button
-                                    type="button"
-                                    className="aform__add-btn aform__add-btn--small"
-                                    onClick={() => addRow(ti)}
-                                >
-                                    + Row
-                                </button>
-                            </div>
-                        </div>
-                    ))}
+                                        <button
+                                            type="button"
+                                            className="aform__add-btn aform__add-btn--small"
+                                            onClick={() => addColumn(ti)}
+                                        >
+                                            + Column
+                                        </button>
+                                    </div>
+
+                                    {/* Sample Data */}
+                                    <h3>Sample Data</h3>
+                                    <div className="aform__data-wrap">
+                                        <table className="aform__data-table">
+                                            <thead>
+                                                <tr>
+                                                    {table.columns.map((col, ci) => (
+                                                        <th key={ci}>{col.name || `Col ${ci + 1}`}</th>
+                                                    ))}
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {table.sampleData.map((row, ri) => (
+                                                    <tr key={ri}>
+                                                        {row.map((cell, ci) => (
+                                                            <td key={ci}>
+                                                                <input
+                                                                    type="text"
+                                                                    className="aform__cell-input"
+                                                                    value={cell}
+                                                                    onChange={(e) =>
+                                                                        updateCell(ti, ri, ci, e.target.value)
+                                                                    }
+                                                                />
+                                                            </td>
+                                                        ))}
+                                                        <td>
+                                                            {table.sampleData.length > 1 && (
+                                                                <button
+                                                                    type="button"
+                                                                    className="aform__icon-btn"
+                                                                    onClick={() => removeRow(ti, ri)}
+                                                                    title="Remove row"
+                                                                >
+                                                                    ✕
+                                                                </button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                        <button
+                                            type="button"
+                                            className="aform__add-btn aform__add-btn--small"
+                                            onClick={() => addRow(ti)}
+                                        >
+                                            + Row
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </>
+                    )}
                 </div>
 
                 {/* ── Hints ── */}
