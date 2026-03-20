@@ -1,10 +1,17 @@
 const router = require('express').Router();
 const Assignment = require('../models/Assignment');
 
-// GET /api/assignments — list all
+// GET /api/assignments — list all (with optional category filter)
 router.get('/', async (req, res) => {
     try {
-        const assignments = await Assignment.find({}, 'title description difficulty createdAt');
+        const filter = {};
+        if (req.query.category) {
+            filter.category = req.query.category;
+        }
+        const assignments = await Assignment.find(
+            filter,
+            'title description difficulty category timeLimit createdAt'
+        ).sort({ createdAt: -1 });
         res.json(assignments);
     } catch (err) {
         res.status(500).json({ error: err.message });
