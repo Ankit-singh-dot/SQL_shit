@@ -55,6 +55,32 @@
     &__error {
         color: $color-hard;
     }
+
+    &__filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: $spacing-xs;
+        margin-bottom: $spacing-lg;
+    }
+
+    &__filter {
+        padding: $spacing-xs $spacing-md;
+        border: 1px solid $color-border;
+        border-radius: 999px;
+        background: transparent;
+        font-size: $font-size-sm;
+        cursor: pointer;
+        transition: all 0.15s;
+        color: $color-muted;
+        font-weight: 500;
+
+        &:hover { border-color: $color-black; color: $color-black; }
+        &--active {
+            background: $color-black;
+            color: $color-white;
+            border-color: $color-black;
+        }
+    }
 }
 
 .assignment-card {
@@ -72,6 +98,10 @@
 
     &__header {
         margin-bottom: $spacing-sm;
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        flex-wrap: wrap;
     }
 
     &__badge {
@@ -97,6 +127,30 @@
             background: lighten($color-hard, 25%);
             color: darken($color-hard, 15%);
         }
+    }
+
+    &__cat {
+        font-size: 0.7rem;
+        color: $color-muted;
+        border: 1px solid $color-gray-200;
+        padding: 2px $spacing-sm;
+        border-radius: $radius-sm;
+    }
+
+    &__timer {
+        font-size: 0.7rem;
+        color: $color-medium;
+        font-weight: 500;
+    }
+
+    &__bookmark {
+        margin-left: auto;
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: transform 0.15s;
+        &:hover { transform: scale(1.2); }
     }
 
     &__title {
