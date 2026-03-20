@@ -2,6 +2,7 @@ const router = require('express').Router();
 const Assignment = require('../models/Assignment');
 const User = require('../models/User');
 const Attempt = require('../models/Attempt');
+const SharedTable = require('../models/SharedTable');
 const { auth, adminOnly } = require('../middleware/auth');
 const { getPGPool } = require('../config/db');
 
@@ -121,28 +122,44 @@ router.get('/assignments/:id', async (req, res) => {
 
 // POST /api/admin/assignments
 router.post('/assignments', async (req, res) => {
-    const { title, description, difficulty, tables, expectedQuery, hints } =
+    const { title, description, difficulty, category, timeLimit, tables, expectedQuery, hints, tableMode, sharedTableNames } =
         req.body;
 
-    if (!title || !description || !tables || tables.length === 0) {
-        return res
-            .status(400)
-            .json({ error: 'title, description, and at least one table are required.' });
-    }
-
     try {
+        let finalTables = tables || [];
+
+        // If using existing shared tables, fetch them
+        if (tableMode === 'existing' && sharedTableNames && sharedTableNames.length > 0) {
+            const shared = await SharedTable.find({ tableName: { $in: sharedTableNames } });
+            finalTables = shared.map((t) => ({
+                tableName: t.tableName,
+                columns: t.columns,
+                sampleData: t.sampleData,
+            }));
+        }
+
+        if (finalTables.length === 0) {
+            return res.status(400).json({ error: 'At least one table is required.' });
+        }
+
         // 1. Save to MongoDB
         const assignment = await Assignment.create({
             title,
             description,
             difficulty: difficulty || 'Easy',
-            tables,
+            category: category || 'Basics',
+            timeLimit: timeLimit || 0,
+            tables: finalTables,
+            tableMode: tableMode || 'custom',
+            sharedTableNames: tableMode === 'existing' ? sharedTableNames : [],
             expectedQuery: expectedQuery || '',
             hints: hints || [],
         });
 
-        // 2. Create PG tables with sample data
-        await syncPGTables(tables);
+        // 2. Only create PG tables for custom mode (shared tables already exist)
+        if (tableMode !== 'existing') {
+            await syncPGTables(finalTables);
+        }
 
         res.status(201).json(assignment);
     } catch (err) {
@@ -152,7 +169,7 @@ router.post('/assignments', async (req, res) => {
 
 // PUT /api/admin/assignments/:id
 router.put('/assignments/:id', async (req, res) => {
-    const { title, description, difficulty, tables, expectedQuery, hints } =
+    const { title, description, difficulty, category, timeLimit, tables, expectedQuery, hints, tableMode, sharedTableNames } =
         req.body;
 
     try {
@@ -164,12 +181,25 @@ router.put('/assignments/:id', async (req, res) => {
         if (title) assignment.title = title;
         if (description) assignment.description = description;
         if (difficulty) assignment.difficulty = difficulty;
+        if (category) assignment.category = category;
+        if (timeLimit !== undefined) assignment.timeLimit = timeLimit;
         if (hints) assignment.hints = hints;
         if (expectedQuery !== undefined) assignment.expectedQuery = expectedQuery;
 
-        // If tables changed, re-sync PG
-        if (tables && tables.length > 0) {
+        // Handle table mode change or table update
+        if (tableMode) assignment.tableMode = tableMode;
+
+        if (tableMode === 'existing' && sharedTableNames && sharedTableNames.length > 0) {
+            assignment.sharedTableNames = sharedTableNames;
+            const shared = await SharedTable.find({ tableName: { $in: sharedTableNames } });
+            assignment.tables = shared.map((t) => ({
+                tableName: t.tableName,
+                columns: t.columns,
+                sampleData: t.sampleData,
+            }));
+        } else if (tables && tables.length > 0) {
             assignment.tables = tables;
+            assignment.sharedTableNames = [];
             await syncPGTables(tables);
         }
 
@@ -187,21 +217,124 @@ router.delete('/assignments/:id', async (req, res) => {
         if (!assignment)
             return res.status(404).json({ error: 'Assignment not found' });
 
-        // Drop associated PG tables
-        const pool = getPGPool();
-        for (const table of assignment.tables) {
-            await pool.query(
-                `DROP TABLE IF EXISTS ${table.tableName} CASCADE;`
-            );
+        // Only drop PG tables if they were custom (not shared)
+        if (assignment.tableMode !== 'existing') {
+            const pool = getPGPool();
+            for (const table of assignment.tables) {
+                // Check if this table is a shared table — don't drop it
+                const isShared = await SharedTable.findOne({ tableName: table.tableName });
+                if (!isShared) {
+                    await pool.query(`DROP TABLE IF EXISTS ${table.tableName} CASCADE;`);
+                }
+            }
         }
 
-        // Remove from MongoDB
         await assignment.deleteOne();
-
-        // Also remove related attempts
         await Attempt.deleteMany({ assignmentId: req.params.id });
 
         res.json({ message: 'Assignment deleted successfully.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ─── Shared Table CRUD ────────────────────────────────────
+
+// GET /api/admin/tables — list all shared tables
+router.get('/tables', async (req, res) => {
+    try {
+        const tables = await SharedTable.find().sort({ createdAt: -1 });
+        res.json(tables);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /api/admin/tables/:id
+router.get('/tables/:id', async (req, res) => {
+    try {
+        const table = await SharedTable.findById(req.params.id);
+        if (!table) return res.status(404).json({ error: 'Table not found' });
+        res.json(table);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /api/admin/tables — create a shared table
+router.post('/tables', async (req, res) => {
+    const { tableName, displayName, columns, sampleData, description } = req.body;
+
+    if (!tableName || !columns || columns.length === 0) {
+        return res.status(400).json({ error: 'tableName and columns are required.' });
+    }
+
+    try {
+        // Save to MongoDB
+        const table = await SharedTable.create({
+            tableName: tableName.toLowerCase().replace(/\s+/g, '_'),
+            displayName: displayName || tableName,
+            columns,
+            sampleData: sampleData || [],
+            description: description || '',
+        });
+
+        // Create in PostgreSQL
+        await syncPGTables([{ tableName: table.tableName, columns, sampleData: sampleData || [] }]);
+
+        res.status(201).json(table);
+    } catch (err) {
+        if (err.code === 11000) {
+            return res.status(400).json({ error: 'A table with this name already exists.' });
+        }
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// PUT /api/admin/tables/:id — update shared table
+router.put('/tables/:id', async (req, res) => {
+    const { columns, sampleData, description, displayName } = req.body;
+
+    try {
+        const table = await SharedTable.findById(req.params.id);
+        if (!table) return res.status(404).json({ error: 'Table not found' });
+
+        if (columns) table.columns = columns;
+        if (sampleData) table.sampleData = sampleData;
+        if (description !== undefined) table.description = description;
+        if (displayName) table.displayName = displayName;
+
+        await table.save();
+
+        // Re-sync PostgreSQL
+        await syncPGTables([{ tableName: table.tableName, columns: table.columns, sampleData: table.sampleData }]);
+
+        res.json(table);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// DELETE /api/admin/tables/:id
+router.delete('/tables/:id', async (req, res) => {
+    try {
+        const table = await SharedTable.findById(req.params.id);
+        if (!table) return res.status(404).json({ error: 'Table not found' });
+
+        // Check if any assignments reference this table
+        const usedBy = await Assignment.countDocuments({ sharedTableNames: table.tableName });
+        if (usedBy > 0) {
+            return res.status(400).json({
+                error: `Cannot delete — ${usedBy} assignment(s) use this table. Remove the table from those assignments first.`,
+            });
+        }
+
+        // Drop from PostgreSQL
+        const pool = getPGPool();
+        await pool.query(`DROP TABLE IF EXISTS ${table.tableName} CASCADE;`);
+
+        await table.deleteOne();
+        res.json({ message: 'Table deleted successfully.' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
