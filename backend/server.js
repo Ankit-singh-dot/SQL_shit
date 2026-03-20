@@ -53,6 +53,12 @@ app.use('/api/hint', require('./routes/hint'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/attempts', require('./routes/attempts'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/bookmarks', require('./routes/bookmarks'));
+app.use('/api/profile', require('./routes/profile'));
+app.use('/api/leaderboard', require('./routes/leaderboard'));
+app.use('/api/compare', require('./routes/compare'));
+app.use('/api/sandbox', require('./routes/sandbox'));
+app.use('/api/certificate', require('./routes/certificate'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
