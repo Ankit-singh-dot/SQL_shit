@@ -35,9 +35,14 @@ const AdminDashboard = () => {
         <div className="admin-dash">
             <div className="admin-dash__header">
                 <h1>Admin Dashboard</h1>
-                <Link to="/admin/assignments" className="admin-dash__btn">
-                    Manage Assignments
-                </Link>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <Link to="/admin/assignments" className="admin-dash__btn">
+                        Manage Assignments
+                    </Link>
+                    <Link to="/admin/tables" className="admin-dash__btn">
+                        📋 Manage Tables
+                    </Link>
+                </div>
             </div>
 
             <div className="admin-dash__grid">
