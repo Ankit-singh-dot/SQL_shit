@@ -1,0 +1,35 @@
+@use '../../styles/variables' as *;
+
+.timer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &__bar {
+        flex: 1;
+        height: 6px;
+        background: $color-gray-200;
+        border-radius: 3px;
+        overflow: hidden;
+        min-width: 80px;
+    }
+
+    &__fill {
+        height: 100%;
+        background: $color-easy;
+        border-radius: 3px;
+        transition: width 1s linear;
+    }
+
+    &__text {
+        font-size: 0.875rem;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    &--urgent {
+        .timer__fill { background: $color-hard; }
+        .timer__text { color: $color-hard; }
+    }
+}

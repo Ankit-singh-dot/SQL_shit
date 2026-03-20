@@ -1,0 +1,229 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.mt {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: $spacing-lg $spacing-md;
+
+    &__loading { text-align: center; padding: $spacing-2xl; color: $color-muted; }
+    &__empty { text-align: center; padding: $spacing-2xl; color: $color-muted; }
+
+    &__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: $spacing-xl;
+        flex-wrap: wrap;
+        gap: $spacing-md;
+        h1 { font-size: $font-size-2xl; font-weight: 700; }
+    }
+
+    &__subtitle { color: $color-muted; font-size: $font-size-sm; margin-top: $spacing-xs; }
+
+    &__add-btn { @include btn; }
+
+    // Form
+    &__form {
+        border: 1px solid $color-border;
+        border-radius: $radius-md;
+        padding: $spacing-lg;
+        margin-bottom: $spacing-xl;
+        h2 { font-size: $font-size-lg; font-weight: 600; margin-bottom: $spacing-md; }
+    }
+
+    &__error {
+        padding: $spacing-sm $spacing-md;
+        background: rgba($color-hard, 0.08);
+        color: $color-hard;
+        border-radius: $radius-sm;
+        font-size: $font-size-sm;
+        margin-bottom: $spacing-md;
+    }
+
+    &__form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: $spacing-md;
+        @media (max-width: 600px) { grid-template-columns: 1fr; }
+    }
+
+    &__label {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-xs;
+        font-size: $font-size-sm;
+        font-weight: 500;
+        margin-bottom: $spacing-md;
+    }
+
+    &__input {
+        padding: $spacing-sm $spacing-md;
+        border: 1px solid $color-border;
+        border-radius: $radius-sm;
+        font-size: $font-size-sm;
+        font-family: $font-family;
+        min-height: 40px;
+        &:focus { outline: none; border-color: $color-black; }
+        &--col { flex: 1; }
+    }
+
+    &__select {
+        padding: $spacing-sm $spacing-md;
+        border: 1px solid $color-border;
+        border-radius: $radius-sm;
+        font-size: $font-size-sm;
+        font-family: $font-family;
+        min-height: 40px;
+        background: $color-white;
+        &:focus { outline: none; border-color: $color-black; }
+    }
+
+    &__section {
+        margin-bottom: $spacing-lg;
+        h3 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: $color-muted; margin-bottom: $spacing-sm; }
+    }
+
+    &__col-row {
+        display: flex;
+        gap: $spacing-sm;
+        margin-bottom: $spacing-sm;
+        align-items: center;
+    }
+
+    &__remove {
+        background: none;
+        border: 1px solid rgba($color-hard, 0.3);
+        color: $color-hard;
+        width: 30px;
+        height: 30px;
+        border-radius: $radius-sm;
+        cursor: pointer;
+        font-size: $font-size-base;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        &:hover { background: rgba($color-hard, 0.05); }
+    }
+
+    &__small-btn {
+        @include btn(transparent, $color-text);
+        border-color: $color-border;
+        font-size: $font-size-sm;
+        padding: $spacing-xs $spacing-md;
+        min-height: 36px;
+    }
+
+    &__data-wrap { overflow-x: auto; margin-bottom: $spacing-sm; }
+
+    &__data-table {
+        width: 100%;
+        font-size: $font-size-sm;
+        th, td { padding: $spacing-xs; }
+        th { font-weight: 500; text-align: left; font-size: 0.75rem; color: $color-muted; text-transform: uppercase; }
+    }
+
+    &__cell-input {
+        width: 100%;
+        padding: $spacing-xs $spacing-sm;
+        border: 1px solid $color-gray-200;
+        border-radius: $radius-sm;
+        font-size: $font-size-sm;
+        font-family: $font-family;
+        min-width: 80px;
+        &:focus { outline: none; border-color: $color-black; }
+    }
+
+    &__form-actions {
+        display: flex;
+        gap: $spacing-sm;
+        margin-top: $spacing-md;
+    }
+
+    &__save-btn { @include btn; }
+    &__cancel-btn {
+        @include btn(transparent, $color-text);
+        border-color: $color-border;
+    }
+
+    // Card list
+    &__list {
+        display: grid;
+        gap: $spacing-md;
+    }
+
+    &__card {
+        border: 1px solid $color-border;
+        border-radius: $radius-md;
+        padding: $spacing-lg;
+        transition: border-color 0.15s;
+        &:hover { border-color: $color-black; }
+    }
+
+    &__card-header {
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        margin-bottom: $spacing-xs;
+    }
+
+    &__card-name {
+        font-size: $font-size-base;
+        font-family: 'Menlo', monospace;
+    }
+
+    &__card-display {
+        font-size: $font-size-sm;
+        color: $color-muted;
+    }
+
+    &__card-desc {
+        font-size: $font-size-sm;
+        color: $color-muted;
+        margin-bottom: $spacing-sm;
+    }
+
+    &__card-cols {
+        display: flex;
+        flex-wrap: wrap;
+        gap: $spacing-xs;
+        margin-bottom: $spacing-sm;
+    }
+
+    &__card-col {
+        padding: 2px $spacing-sm;
+        border: 1px solid $color-gray-200;
+        border-radius: $radius-sm;
+        font-size: 0.75rem;
+        small { color: $color-gray-400; margin-left: 4px; }
+    }
+
+    &__card-meta {
+        font-size: 0.75rem;
+        color: $color-gray-400;
+        margin-bottom: $spacing-sm;
+    }
+
+    &__card-actions {
+        display: flex;
+        gap: $spacing-sm;
+    }
+
+    &__edit-btn {
+        @include btn(transparent, $color-text);
+        border-color: $color-border;
+        font-size: $font-size-sm;
+        padding: $spacing-xs $spacing-md;
+        min-height: 32px;
+    }
+
+    &__delete-btn {
+        @include btn(transparent, $color-hard);
+        border-color: rgba($color-hard, 0.3);
+        font-size: $font-size-sm;
+        padding: $spacing-xs $spacing-md;
+        min-height: 32px;
+        &:hover { background: rgba($color-hard, 0.05); }
+    }
+}

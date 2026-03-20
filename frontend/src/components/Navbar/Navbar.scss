@@ -78,6 +78,10 @@
             border-radius: $radius-sm;
             min-height: auto;
         }
+
+        &--user {
+            font-weight: 600;
+        }
     }
 
     &__user {

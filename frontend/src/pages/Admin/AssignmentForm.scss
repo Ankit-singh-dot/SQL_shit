@@ -246,4 +246,89 @@
         font-size: $font-size-base;
         padding: $spacing-sm $spacing-xl;
     }
+
+    // ── Mode Toggle ──
+
+    &__mode-toggle {
+        display: flex;
+        gap: $spacing-sm;
+        flex-wrap: wrap;
+    }
+
+    &__mode-btn {
+        padding: $spacing-sm $spacing-md;
+        border: 1px solid $color-border;
+        border-radius: $radius-sm;
+        background: transparent;
+        font-size: $font-size-sm;
+        cursor: pointer;
+        font-family: $font-family;
+        transition: all 0.15s;
+        color: $color-muted;
+
+        &:hover { border-color: $color-black; color: $color-black; }
+        &--active {
+            background: $color-black;
+            color: $color-white;
+            border-color: $color-black;
+        }
+    }
+
+    // ── Shared Tables ──
+
+    &__shared-tables { margin-top: $spacing-sm; }
+
+    &__shared-empty {
+        color: $color-muted;
+        font-size: $font-size-sm;
+        a { color: $color-black; font-weight: 600; text-decoration: underline; }
+    }
+
+    &__shared-hint {
+        font-size: $font-size-sm;
+        color: $color-muted;
+        margin-bottom: $spacing-sm;
+    }
+
+    &__shared-grid {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-sm;
+    }
+
+    &__shared-item {
+        display: flex;
+        align-items: flex-start;
+        gap: $spacing-sm;
+        padding: $spacing-sm $spacing-md;
+        border: 1px solid $color-gray-200;
+        border-radius: $radius-sm;
+        cursor: pointer;
+        transition: border-color 0.15s;
+
+        &:hover { border-color: $color-black; }
+
+        input[type="checkbox"] {
+            margin-top: 4px;
+            accent-color: $color-black;
+        }
+    }
+
+    &__shared-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: $font-size-sm;
+    }
+
+    &__shared-tname {
+        font-family: 'Menlo', monospace;
+        font-size: 0.75rem;
+        color: $color-gray-400;
+    }
+
+    &__shared-cols {
+        font-size: 0.75rem;
+        color: $color-muted;
+    }
 }
