@@ -56,6 +56,11 @@ const Navbar = () => {
                                     Admin
                                 </Link>
                             )}
+                            {user.role === 'teacher' && (
+                                <Link to="/admin/assignments" className="navbar__link navbar__link--admin" onClick={() => setMenuOpen(false)}>
+                                    Manage
+                                </Link>
+                            )}
                             <Link to="/profile" className="navbar__link navbar__link--user" onClick={() => setMenuOpen(false)}>
                                 {user.username}
                             </Link>
