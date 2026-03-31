@@ -31,4 +31,14 @@ const adminOnly = (req, res, next) => {
     next();
 };
 
-module.exports = { auth, adminOnly };
+/**
+ * Require teacher or admin role. Must be used AFTER auth middleware.
+ */
+const teacherOrAdmin = (req, res, next) => {
+    if (req.user.role !== 'admin' && req.user.role !== 'teacher') {
+        return res.status(403).json({ error: 'Teacher or Admin access required.' });
+    }
+    next();
+};
+
+module.exports = { auth, adminOnly, teacherOrAdmin };
