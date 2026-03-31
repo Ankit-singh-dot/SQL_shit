@@ -168,9 +168,14 @@ const ManageTables = () => {
                     <h1>📋 Manage Tables</h1>
                     <p className="mt__subtitle">Shared table pool — create once, reuse across assignments</p>
                 </div>
-                <button className="mt__add-btn" onClick={() => { resetForm(); setShowForm(true); }}>
-                    + New Table
-                </button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button className="mt__cancel-btn" onClick={() => navigate(-1)}>
+                        ← Back
+                    </button>
+                    <button className="mt__add-btn" onClick={() => { resetForm(); setShowForm(true); }}>
+                        + New Table
+                    </button>
+                </div>
             </div>
 
             {/* Form */}
