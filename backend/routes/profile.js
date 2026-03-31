@@ -13,10 +13,10 @@ router.get('/', auth, async (req, res) => {
         const [totalAttempts, correctAttempts, solvedAssignments, recentAttempts] =
             await Promise.all([
                 Attempt.countDocuments({ userId: req.userId }),
-                Attempt.countDocuments({ userId: req.userId, isCorrect: true }),
+                Attempt.countDocuments({ userId: req.userId, isFullyCorrect: true }),
                 Attempt.distinct('assignmentId', {
                     userId: req.userId,
-                    isCorrect: true,
+                    isFullyCorrect: true,
                 }),
                 Attempt.find({ userId: req.userId })
                     .sort({ createdAt: -1 })
@@ -49,7 +49,7 @@ router.get('/', auth, async (req, res) => {
 
         // Streak calculation (consecutive days with correct attempts)
         const correctDates = await Attempt.find(
-            { userId: req.userId, isCorrect: true },
+            { userId: req.userId, isFullyCorrect: true },
             'createdAt'
         ).sort({ createdAt: -1 });
 
@@ -112,8 +112,8 @@ router.get('/', auth, async (req, res) => {
             },
             recentActivity: recentAttempts.map((a) => ({
                 id: a._id,
-                query: a.query,
-                isCorrect: a.isCorrect,
+                query: a.codingAnswers?.length > 0 ? a.codingAnswers[0].query : 'MCQ Submission',
+                isCorrect: a.isFullyCorrect,
                 createdAt: a.createdAt,
                 assignment: a.assignmentId
                     ? {
