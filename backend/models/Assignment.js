@@ -11,6 +11,18 @@ const tableSchema = new mongoose.Schema({
     sampleData: [[mongoose.Schema.Types.Mixed]],
 }, { _id: false });
 
+const mcqSchema = new mongoose.Schema({
+    questionText: { type: String, required: true },
+    options: [{ type: String, required: true }],
+    correctOptionIndex: { type: Number, required: true }
+}, { _id: false });
+
+const codingQuestionSchema = new mongoose.Schema({
+    questionText: { type: String, required: true },
+    expectedQuery: { type: String, required: true },
+    hints: [String]
+}, { _id: false });
+
 const assignmentSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String, required: true },
@@ -24,12 +36,14 @@ const assignmentSchema = new mongoose.Schema({
         enum: ['Basics', 'Filtering', 'Aggregation', 'Joins', 'Subqueries', 'Advanced'],
         default: 'Basics',
     },
-    timeLimit: { type: Number, default: 0 }, // seconds, 0 = no timer
+    mcqTimeLimit: { type: Number, default: 0 }, // seconds
+    codingTimeLimit: { type: Number, default: 0 }, // seconds
     tableMode: { type: String, enum: ['custom', 'existing'], default: 'custom' },
-    sharedTableNames: [String], // when tableMode is 'existing', references shared tables by name
+    sharedTableNames: [String],
     tables: [tableSchema],
-    expectedQuery: { type: String }, // reference solution (not shown to user)
-    hints: [String],
+    mcqs: [mcqSchema],
+    codingQuestions: [codingQuestionSchema],
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Assignment', assignmentSchema);
