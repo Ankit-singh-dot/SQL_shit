@@ -12,11 +12,11 @@ const ManageAssignments = () => {
     const navigate = useNavigate();
 
     const token = localStorage.getItem('cipherToken');
+    const user = JSON.parse(localStorage.getItem('cipherUser') || '{}');
     const headers = { Authorization: `Bearer ${token}` };
 
     useEffect(() => {
-        const user = JSON.parse(localStorage.getItem('cipherUser') || '{}');
-        if (user.role !== 'admin') {
+        if (user.role !== 'admin' && user.role !== 'teacher') {
             navigate('/');
             return;
         }
@@ -53,12 +53,21 @@ const ManageAssignments = () => {
             <div className="manage__header">
                 <h1>Manage Assignments</h1>
                 <div className="manage__actions">
-                    <Link to="/admin" className="manage__btn manage__btn--outline">
-                        ← Dashboard
-                    </Link>
-                    <Link to="/admin/assignments/new" className="manage__btn">
-                        + New Assignment
-                    </Link>
+                    {user.role === 'admin' && (
+                        <Link to="/admin" className="manage__btn manage__btn--outline">
+                            ← Dashboard
+                        </Link>
+                    )}
+                    {user.role === 'teacher' && (
+                        <>
+                            <Link to="/admin/tables" className="manage__btn manage__btn--outline">
+                                📋 Manage Tables
+                            </Link>
+                            <Link to="/admin/assignments/new" className="manage__btn">
+                                + New Assignment
+                            </Link>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -74,7 +83,7 @@ const ManageAssignments = () => {
                             <tr>
                                 <th>Title</th>
                                 <th>Difficulty</th>
-                                <th>Tables</th>
+                                <th>Content</th>
                                 <th>Created</th>
                                 <th>Actions</th>
                             </tr>
@@ -88,7 +97,7 @@ const ManageAssignments = () => {
                                             {a.difficulty}
                                         </span>
                                     </td>
-                                    <td>{a.tables.length}</td>
+                                    <td>{a.mcqs?.length || 0} MCQs, {a.codingQuestions?.length || 0} Queries</td>
                                     <td>{new Date(a.createdAt).toLocaleDateString()}</td>
                                     <td className="manage__actions-cell">
                                         <Link
