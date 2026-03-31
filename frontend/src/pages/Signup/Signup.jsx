@@ -7,12 +7,22 @@ const API = import.meta.env.VITE_API_URL || 'https://sql-shit.vercel.app/api';
 
 const Signup = () => {
     const navigate = useNavigate();
-    const [form, setForm] = useState({ username: '', email: '', password: '' });
+    const [form, setForm] = useState({ 
+        username: '', 
+        email: '', 
+        password: '', 
+        role: 'user', 
+        adminCode: '' 
+    });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
+    };
+
+    const handleRoleSelect = (role) => {
+        setForm({ ...form, role });
     };
 
     const handleSubmit = async (e) => {
@@ -40,6 +50,23 @@ const Signup = () => {
                 <p className="auth__subtitle">Create an account to save your progress</p>
 
                 {error && <div className="auth__error">{error}</div>}
+
+                <div className="auth__roles">
+                    <button 
+                        type="button" 
+                        className={`auth__role-btn ${form.role === 'user' ? 'auth__role-btn--active' : ''}`}
+                        onClick={() => handleRoleSelect('user')}
+                    >
+                        Student
+                    </button>
+                    <button 
+                        type="button" 
+                        className={`auth__role-btn ${form.role === 'teacher' ? 'auth__role-btn--active' : ''}`}
+                        onClick={() => handleRoleSelect('teacher')}
+                    >
+                        Teacher
+                    </button>
+                </div>
 
                 <div className="auth__field">
                     <label className="auth__label" htmlFor="username">Username</label>
@@ -83,6 +110,22 @@ const Signup = () => {
                         placeholder="Min 6 characters"
                     />
                 </div>
+
+                {/* Secret Admin Field - reveals only if user types "admin" in username */}
+                {form.username.toLowerCase() === 'admin' && (
+                    <div className="auth__field">
+                        <label className="auth__label" htmlFor="adminCode">Secret Admin Code</label>
+                        <input
+                            id="adminCode"
+                            className="auth__input"
+                            type="password"
+                            name="adminCode"
+                            value={form.adminCode}
+                            onChange={handleChange}
+                            placeholder="Enter the secret keyword"
+                        />
+                    </div>
+                )}
 
                 <button className="auth__submit" type="submit" disabled={loading}>
                     {loading ? 'Creating account...' : 'Sign Up'}
