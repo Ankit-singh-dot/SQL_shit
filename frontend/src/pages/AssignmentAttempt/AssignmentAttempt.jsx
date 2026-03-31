@@ -14,33 +14,28 @@ const AssignmentAttempt = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Editor state
+    // Phase: 'mcq', 'coding', 'submitted'
+    const [phase, setPhase] = useState('mcq');
+
+    // Answers tracking
+    const [mcqAnswers, setMcqAnswers] = useState([]);
+    const [codingAnswers, setCodingAnswers] = useState([]);
+    const [activeCodingIndex, setActiveCodingIndex] = useState(0);
+
+    // Editor & Execution state for current coding question
     const [query, setQuery] = useState('SELECT ');
     const [executing, setExecuting] = useState(false);
     const [result, setResult] = useState(null);
     const [queryError, setQueryError] = useState(null);
+    const [lastCorrect, setLastCorrect] = useState(null); // tracking verify
+    const [verifying, setVerifying] = useState(false);
 
-    // Hint state
-    const [hint, setHint] = useState(null);
-    const [hintLoading, setHintLoading] = useState(false);
+    // Timer status
+    const [mcqTimedOut, setMcqTimedOut] = useState(false);
+    const [codingTimedOut, setCodingTimedOut] = useState(false);
 
-    // Panel toggle for mobile
-    const [activePanel, setActivePanel] = useState('question');
-
-    // Attempts
-    const [attempts, setAttempts] = useState([]);
-
-    // Bookmark
-    const [isBookmarked, setIsBookmarked] = useState(false);
-
-    // Solution comparison
-    const [comparison, setComparison] = useState(null);
-    const [comparing, setComparing] = useState(false);
-    const [hasSolved, setHasSolved] = useState(false);
-    const [lastCorrect, setLastCorrect] = useState(null);
-
-    // Timer
-    const [timedOut, setTimedOut] = useState(false);
+    // Post-submit
+    const [submissionResult, setSubmissionResult] = useState(null);
 
     const token = localStorage.getItem('cipherToken');
 
@@ -48,7 +43,21 @@ const AssignmentAttempt = () => {
         const fetchAssignment = async () => {
             try {
                 const res = await axios.get(`${API}/assignments/${id}`);
-                setAssignment(res.data);
+                const data = res.data;
+                setAssignment(data);
+                
+                // Initialize answers structures
+                setMcqAnswers(data.mcqs?.map((_, i) => ({ questionIndex: i, selectedOptionIndex: -1 })) || []);
+                setCodingAnswers(data.codingQuestions?.map((_, i) => ({ questionIndex: i, query: 'SELECT ' })) || []);
+
+                // Determine initial phase
+                if (data.mcqs && data.mcqs.length > 0) {
+                    setPhase('mcq');
+                } else if (data.codingQuestions && data.codingQuestions.length > 0) {
+                    setPhase('coding');
+                } else {
+                    setPhase('submitted'); // Should not happen
+                }
             } catch (err) {
                 setError(err.response?.data?.error || 'Failed to load assignment');
             } finally {
@@ -58,49 +67,43 @@ const AssignmentAttempt = () => {
         fetchAssignment();
     }, [id]);
 
-    // Load saved attempts if logged in
     useEffect(() => {
-        if (token && id) {
-            axios
-                .get(`${API}/attempts/${id}`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                })
-                .then((res) => {
-                    setAttempts(res.data);
-                    if (res.data.some((a) => a.isCorrect)) setHasSolved(true);
-                })
-                .catch(() => { });
+        // When activeCodingIndex changes, load saved query from draft
+        if (assignment && assignment.codingQuestions && phase === 'coding') {
+            const draft = codingAnswers.find(c => c.questionIndex === activeCodingIndex);
+            setQuery(draft ? draft.query : 'SELECT ');
+            setResult(null);
+            setQueryError(null);
+            setLastCorrect(null);
         }
-    }, [id, token]);
+    }, [activeCodingIndex, phase, assignment, codingAnswers]);
 
-    // Check bookmark status
-    useEffect(() => {
-        if (token) {
-            axios
-                .get(`${API}/bookmarks`, { headers: { Authorization: `Bearer ${token}` } })
-                .then((res) => {
-                    if (res.data.some((b) => b._id === id)) setIsBookmarked(true);
-                })
-                .catch(() => {});
+    const handleMcqSelect = (questionIndex, selectedOptionIndex) => {
+        if (mcqTimedOut) return;
+        setMcqAnswers(prev => prev.map(ans => 
+            ans.questionIndex === questionIndex ? { ...ans, selectedOptionIndex } : ans
+        ));
+    };
+
+    const handleQueryChange = (val) => {
+        if (codingTimedOut) return;
+        const newQuery = val || '';
+        setQuery(newQuery);
+        setCodingAnswers(prev => prev.map(ans => 
+            ans.questionIndex === activeCodingIndex ? { ...ans, query: newQuery } : ans
+        ));
+    };
+
+    const handleNextPhase = () => {
+        if (assignment.codingQuestions && assignment.codingQuestions.length > 0) {
+            setPhase('coding');
+        } else {
+            handleSubmit();
         }
-    }, [id, token]);
-
-    const toggleBookmark = async () => {
-        if (!token) return;
-        const headers = { Authorization: `Bearer ${token}` };
-        try {
-            if (isBookmarked) {
-                await axios.delete(`${API}/bookmarks/${id}`, { headers });
-                setIsBookmarked(false);
-            } else {
-                await axios.post(`${API}/bookmarks/${id}`, {}, { headers });
-                setIsBookmarked(true);
-            }
-        } catch {}
     };
 
     const handleExecute = async () => {
-        if (!query.trim() || timedOut) return;
+        if (!query.trim() || codingTimedOut) return;
         setExecuting(true);
         setResult(null);
         setQueryError(null);
@@ -110,20 +113,6 @@ const AssignmentAttempt = () => {
             const res = await axios.post(`${API}/execute`, { query });
             setResult(res.data);
             setQueryError(null);
-
-            // Save attempt if logged in — server verifies correctness
-            if (token) {
-                try {
-                    const saved = await axios.post(
-                        `${API}/attempts`,
-                        { assignmentId: id, query, result: res.data },
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                    setAttempts((prev) => [saved.data, ...prev]);
-                    setLastCorrect(saved.data.isCorrect);
-                    if (saved.data.isCorrect) setHasSolved(true);
-                } catch { }
-            }
         } catch (err) {
             setQueryError(err.response?.data?.error || 'Query execution failed');
         } finally {
@@ -131,313 +120,251 @@ const AssignmentAttempt = () => {
         }
     };
 
-    const handleHint = async () => {
-        setHintLoading(true);
-        setHint(null);
-
-        const tableInfo = assignment?.tables
-            ?.map(
-                (t) =>
-                    `Table: ${t.tableName} — Columns: ${(t.columns || []).map((c) => `${c.name} (${c.type})`).join(', ')}`
-            )
-            .join('\n');
-
+    const handleVerify = async () => {
+        if (!query.trim() || codingTimedOut || !token) return;
+        setVerifying(true);
         try {
-            const res = await axios.post(`${API}/hint`, {
-                question: assignment?.description,
-                userQuery: query,
-                tableInfo,
-            });
-            setHint(res.data.hint);
+            const res = await axios.post(
+                `${API}/attempts/verify`,
+                { assignmentId: id, questionIndex: activeCodingIndex, query },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setLastCorrect(res.data.isCorrect);
         } catch (err) {
-            setHint('Failed to get hint. Please try again.');
+            console.error('Verify failed', err);
         } finally {
-            setHintLoading(false);
+            setVerifying(false);
         }
     };
 
-    const handleCompare = async () => {
-        if (!assignment?.expectedQuery) return;
-        setComparing(true);
-        setComparison(null);
-
+    const handleSubmit = async () => {
+        if (!token) {
+            alert("You must be logged in to submit.");
+            return;
+        }
+        
+        // Filter out unanswered MCQs
+        const finalMcqAnswers = mcqAnswers.filter(m => m.selectedOptionIndex !== -1);
+        
         try {
-            const tableInfo = assignment.tables
-                ?.map((t) => `${t.tableName}: ${t.columns.map((c) => c.name).join(', ')}`)
-                .join('; ');
-
-            const res = await axios.post(`${API}/compare`, {
-                studentQuery: query,
-                expectedQuery: assignment.expectedQuery,
-                question: assignment.description,
-                tableInfo,
+            const payload = { assignmentId: id, mcqAnswers: finalMcqAnswers, codingAnswers };
+            const res = await axios.post(`${API}/attempts`, payload, {
+                headers: { Authorization: `Bearer ${token}` }
             });
-            setComparison(res.data.comparison);
-        } catch {
-            setComparison('Failed to compare. Please try again.');
-        } finally {
-            setComparing(false);
+            setSubmissionResult(res.data);
+            setPhase('submitted');
+        } catch (err) {
+            alert(err.response?.data?.error || 'Failed to submit assignment');
         }
-    };
-
-    const handleTimeout = () => {
-        setTimedOut(true);
     };
 
     if (loading) return <div className="attempt__loading">Loading assignment...</div>;
     if (error) return <div className="attempt__error">{error}</div>;
     if (!assignment) return <div className="attempt__error">Assignment not found</div>;
 
+    if (phase === 'submitted' && submissionResult) {
+        return (
+            <div className="attempt attempt--submitted" style={{ padding: '2rem', textAlign: 'center' }}>
+                <Link to="/" className="attempt__back">← Back to Dashboard</Link>
+                <h1>Assignment Completed!</h1>
+                <div style={{ fontSize: '2rem', margin: '2rem 0', fontWeight: 'bold' }}>
+                    Score: {submissionResult.score} / {submissionResult.totalMaxScore}
+                </div>
+                <p>Your submission has been securely recorded.</p>
+            </div>
+        );
+    }
+
     return (
         <div className="attempt">
-            {/* Mobile panel tabs */}
-            <div className="attempt__tabs">
-                <button
-                    className={`attempt__tab ${activePanel === 'question' ? 'attempt__tab--active' : ''}`}
-                    onClick={() => setActivePanel('question')}
-                >
-                    Question
-                </button>
-                <button
-                    className={`attempt__tab ${activePanel === 'data' ? 'attempt__tab--active' : ''}`}
-                    onClick={() => setActivePanel('data')}
-                >
-                    Data
-                </button>
-                <button
-                    className={`attempt__tab ${activePanel === 'editor' ? 'attempt__tab--active' : ''}`}
-                    onClick={() => setActivePanel('editor')}
-                >
-                    Editor
-                </button>
-                <button
-                    className={`attempt__tab ${activePanel === 'results' ? 'attempt__tab--active' : ''}`}
-                    onClick={() => setActivePanel('results')}
-                >
-                    Results
-                </button>
+            {/* Header Area common to phases */}
+            <div className="attempt__global-header" style={{ padding: '1rem', borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                    <h1 style={{ margin: 0 }}>{assignment.title}</h1>
+                    <span style={{ fontSize: '0.85rem', color: '#666' }}>Phase: {phase.toUpperCase()}</span>
+                </div>
+                <div>
+                    {phase === 'mcq' && assignment.mcqTimeLimit > 0 && !mcqTimedOut && (
+                        <Timer seconds={assignment.mcqTimeLimit} onTimeout={() => setMcqTimedOut(true)} />
+                    )}
+                    {phase === 'coding' && assignment.codingTimeLimit > 0 && !codingTimedOut && (
+                        <Timer seconds={assignment.codingTimeLimit} onTimeout={() => setCodingTimedOut(true)} />
+                    )}
+                </div>
             </div>
 
-            <div className="attempt__layout">
-                {/* Left column: Question + Data */}
-                <div className="attempt__left">
-                    {/* Question Panel */}
-                    <div className={`attempt__panel ${activePanel === 'question' ? 'attempt__panel--active' : ''}`}>
-                        <div className="attempt__panel-header">
-                            <Link to="/" className="attempt__back">← Back</Link>
-                            <span className={`attempt__badge attempt__badge--${assignment.difficulty.toLowerCase()}`}>
-                                {assignment.difficulty}
-                            </span>
-                            {assignment.category && (
-                                <span className="attempt__cat-badge">{assignment.category}</span>
-                            )}
-                            {token && (
-                                <button className="attempt__bookmark-btn" onClick={toggleBookmark}>
-                                    {isBookmarked ? '♥' : '♡'}
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Timer */}
-                        {assignment.timeLimit > 0 && !timedOut && (
-                            <div className="attempt__timer-wrap">
-                                <Timer seconds={assignment.timeLimit} onTimeout={handleTimeout} />
-                            </div>
-                        )}
-                        {timedOut && (
-                            <div className="attempt__timed-out">
-                                ⏰ Time's up! You can still view the assignment but can't submit.
-                            </div>
-                        )}
-
-                        <h1 className="attempt__title">{assignment.title}</h1>
-                        <p className="attempt__desc">{assignment.description}</p>
-
-                        {/* Hint section */}
-                        <div className="attempt__hint-section">
-                            <button
-                                className="attempt__hint-btn"
-                                onClick={handleHint}
-                                disabled={hintLoading}
-                            >
-                                {hintLoading ? 'Getting hint...' : '💡 Get Hint'}
-                            </button>
-                            {hint && (
-                                <div className="attempt__hint-box">
-                                    <strong>Hint:</strong> {hint}
+            {/* MCQ Phase Layout */}
+            {phase === 'mcq' && (
+                <div className="attempt__layout" style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '2rem' }}>
+                    <div className="attempt__panel attempt__panel--active" style={{ width: '100%' }}>
+                        <h2>Multiple Choice Section</h2>
+                        {mcqTimedOut && <div className="attempt__verdict attempt__verdict--wrong">Time is up for the MCQ section!</div>}
+                        
+                        {(assignment.mcqs || []).map((mcq, i) => (
+                            <div key={i} style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid #ddd', borderRadius: '8px' }}>
+                                <h3 style={{ marginTop: 0 }}>Q{i + 1}: {mcq.questionText}</h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    {mcq.options.map((opt, oi) => (
+                                        <label key={oi} style={{ display: 'flex', gap: '0.5rem', cursor: 'pointer' }}>
+                                            <input 
+                                                type="radio" 
+                                                name={`mcq-${i}`} 
+                                                checked={mcqAnswers.find(a => a.questionIndex === i)?.selectedOptionIndex === oi}
+                                                onChange={() => handleMcqSelect(i, oi)}
+                                                disabled={mcqTimedOut}
+                                            />
+                                            {opt}
+                                        </label>
+                                    ))}
                                 </div>
-                            )}
+                            </div>
+                        ))}
+                        
+                        <div style={{ textAlign: 'right' }}>
+                            <button className="attempt__execute-btn" onClick={handleNextPhase}>
+                                {assignment.codingQuestions?.length > 0 ? 'Next: Coding Section ➔' : 'Submit Assignment'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Coding Phase Layout */}
+            {phase === 'coding' && (
+                <div className="attempt__layout">
+                    {/* Left column */}
+                    <div className="attempt__left">
+                        <div className="attempt__panel attempt__panel--active">
+                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', overflowX: 'auto' }}>
+                                {(assignment.codingQuestions || []).map((_, i) => (
+                                    <button 
+                                        key={i} 
+                                        onClick={() => setActiveCodingIndex(i)}
+                                        style={{
+                                            padding: '0.5rem 1rem', 
+                                            background: activeCodingIndex === i ? '#000' : '#fff',
+                                            color: activeCodingIndex === i ? '#fff' : '#000',
+                                            border: '1px solid #000', borderRadius: '4px', cursor: 'pointer'
+                                        }}
+                                    >
+                                        Q{i + 1}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            <h2 style={{marginTop: 0}}>Question {activeCodingIndex + 1}</h2>
+                            <p className="attempt__desc">
+                                {assignment.codingQuestions[activeCodingIndex]?.questionText}
+                            </p>
+
+                            {codingTimedOut && <div className="attempt__verdict attempt__verdict--wrong">Time is up! You can no longer edit queries.</div>}
+
+                            <div style={{ marginTop: '2rem' }}>
+                                <h3>Sample Data Schema</h3>
+                                <SchemaVisualizer tables={assignment.tables} />
+                            </div>
+
+                            <div style={{ marginTop: '2rem' }} className="attempt__table-block">
+                                <h3>Available Tables</h3>
+                                {(assignment.tables || []).map((table, i) => (
+                                    <div key={i} style={{ marginBottom: '1.5rem' }}>
+                                        <div className="attempt__table-name">{table.tableName}</div>
+                                        <div className="attempt__table-wrap">
+                                            <table className="attempt__table">
+                                                <thead>
+                                                    <tr>
+                                                        {table.columns.map((col, ci) => (
+                                                            <th key={ci}>
+                                                                {col.name}
+                                                                <span className="attempt__col-type">({col.type})</span>
+                                                            </th>
+                                                        ))}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {table.sampleData && table.sampleData.length > 0 ? (
+                                                        table.sampleData.map((row, ri) => (
+                                                            <tr key={ri}>
+                                                                {row.map((val, vi) => (
+                                                                    <td key={vi}>{String(val)}</td>
+                                                                ))}
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan={table.columns.length} style={{ textAlign: 'center', color: '#999' }}>
+                                                                No sample data provided.
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Sample Data Panel */}
-                    <div className={`attempt__panel ${activePanel === 'data' ? 'attempt__panel--active' : ''}`}>
-                        {/* Schema Visualizer */}
-                        <SchemaVisualizer tables={assignment.tables} />
+                    {/* Right column */}
+                    <div className="attempt__right">
+                        <div className="attempt__panel attempt__panel--active">
+                            <div className="attempt__editor-header">
+                                <h2 className="attempt__section-title">SQL Editor</h2>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button className="attempt__execute-btn" style={{ background: '#555' }} onClick={handleExecute} disabled={executing || codingTimedOut}>
+                                        {executing ? '...' : '▶ Run'}
+                                    </button>
+                                    <button className="attempt__execute-btn" onClick={handleVerify} disabled={verifying || codingTimedOut}>
+                                        {verifying ? '...' : 'Verify'}
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="attempt__editor-wrap" style={{ border: '1px solid #ddd', borderRadius: '4px' }}>
+                                <Editor
+                                    height="250px"
+                                    defaultLanguage="sql"
+                                    value={query}
+                                    onChange={handleQueryChange}
+                                    theme="vs-dark"
+                                    options={{ minimap: { enabled: false }, fontSize: 14, tabSize: 2, readOnly: codingTimedOut }}
+                                />
+                            </div>
+                        </div>
 
-                        <h2 className="attempt__section-title" style={{ marginTop: '1rem' }}>Sample Data</h2>
-                        {assignment.tables?.map((table, i) => (
-                            <div key={i} className="attempt__table-block">
-                                <h3 className="attempt__table-name">{table.tableName}</h3>
+                        <div className="attempt__panel attempt__panel--active">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h2 className="attempt__section-title">Results {result && <span style={{fontWeight: 'normal', fontSize:'0.9rem'}}>({result.rowCount} rows)</span>}</h2>
+                                <button onClick={handleSubmit} style={{ padding: '0.5rem 1rem', background: 'green', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                                    Submit Assignment
+                                </button>
+                            </div>
+
+                            {lastCorrect === true && <div className="attempt__verdict attempt__verdict--correct">✅ Verified Correct!</div>}
+                            {lastCorrect === false && <div className="attempt__verdict attempt__verdict--wrong">❌ Incorrect query. Keep trying!</div>}
+                            {queryError && <div className="attempt__query-error">{queryError}</div>}
+
+                            {result && result.rows?.length > 0 && (
                                 <div className="attempt__table-wrap">
-                                    <table className="attempt__table">
+                                    <table className="attempt__table attempt__table--result">
                                         <thead>
-                                            <tr>
-                                                {(table.columns || []).map((col, j) => (
-                                                    <th key={j}>
-                                                        {col.name}
-                                                        <span className="attempt__col-type">{col.type}</span>
-                                                    </th>
-                                                ))}
-                                            </tr>
+                                            <tr>{result.columns.map((col, i) => <th key={i}>{col}</th>)}</tr>
                                         </thead>
                                         <tbody>
-                                            {(table.sampleData || []).map((row, ri) => (
+                                            {result.rows.map((row, ri) => (
                                                 <tr key={ri}>
-                                                    {(row || []).map((cell, ci) => (
-                                                        <td key={ci}>{String(cell)}</td>
-                                                    ))}
+                                                    {result.columns.map((col, ci) => <td key={ci}>{row[col] != null ? String(row[col]) : 'NULL'}</td>)}
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Right column: Editor + Results */}
-                <div className="attempt__right">
-                    {/* Editor Panel */}
-                    <div className={`attempt__panel ${activePanel === 'editor' ? 'attempt__panel--active' : ''}`}>
-                        <div className="attempt__editor-header">
-                            <h2 className="attempt__section-title">SQL Editor</h2>
-                            <button
-                                className="attempt__execute-btn"
-                                onClick={handleExecute}
-                                disabled={executing || timedOut}
-                            >
-                                {executing ? 'Running...' : '▶ Execute'}
-                            </button>
-                        </div>
-                        <div className="attempt__editor-wrap">
-                            <Editor
-                                height="300px"
-                                defaultLanguage="sql"
-                                value={query}
-                                onChange={(val) => setQuery(val || '')}
-                                theme="vs-dark"
-                                options={{
-                                    minimap: { enabled: false },
-                                    fontSize: 14,
-                                    lineNumbers: 'on',
-                                    scrollBeyondLastLine: false,
-                                    automaticLayout: true,
-                                    tabSize: 2,
-                                    wordWrap: 'on',
-                                    readOnly: timedOut,
-                                }}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Results Panel */}
-                    <div className={`attempt__panel ${activePanel === 'results' ? 'attempt__panel--active' : ''}`}>
-                        <h2 className="attempt__section-title">
-                            Results
-                            {result && <span className="attempt__row-count"> ({result.rowCount} rows)</span>}
-                        </h2>
-
-                        {/* Verification Banner */}
-                        {lastCorrect === true && (
-                            <div className="attempt__verdict attempt__verdict--correct">
-                                ✅ Correct! Your query returns the expected results.
-                            </div>
-                        )}
-                        {lastCorrect === false && token && (
-                            <div className="attempt__verdict attempt__verdict--wrong">
-                                ❌ Not quite. The results don't match the expected output. Try again!
-                            </div>
-                        )}
-
-                        {queryError && <div className="attempt__query-error">{queryError}</div>}
-
-                        {result && result.rows?.length > 0 && (
-                            <div className="attempt__table-wrap">
-                                <table className="attempt__table attempt__table--result">
-                                    <thead>
-                                        <tr>
-                                            {result.columns.map((col, i) => (
-                                                <th key={i}>{col}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {result.rows.map((row, ri) => (
-                                            <tr key={ri}>
-                                                {result.columns.map((col, ci) => (
-                                                    <td key={ci}>{row[col] != null ? String(row[col]) : 'NULL'}</td>
-                                                ))}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-
-                        {result && result.rows?.length === 0 && (
-                            <p className="attempt__empty-result">Query returned no results.</p>
-                        )}
-
-                        {!result && !queryError && (
-                            <p className="attempt__placeholder">Execute a query to see results here.</p>
-                        )}
-                    </div>
-
-                    {/* Solution Comparison */}
-                    {assignment.expectedQuery && (
-                        <div className="attempt__panel attempt__panel--always">
-                            <h2 className="attempt__section-title">🔍 Compare Solution</h2>
-                            <p className="attempt__compare-hint">
-                                Compare your query with the reference solution using AI analysis.
-                            </p>
-                            <button
-                                className="attempt__compare-btn"
-                                onClick={handleCompare}
-                                disabled={comparing || !query.trim()}
-                            >
-                                {comparing ? 'Analyzing…' : 'Compare with Reference'}
-                            </button>
-                            {comparison && (
-                                <div className="attempt__comparison">
-                                    {comparison}
-                                </div>
                             )}
+                            {result && result.rows?.length === 0 && <p className="attempt__empty-result">Query returned no results.</p>}
                         </div>
-                    )}
-
-                    {/* Previous Attempts */}
-                    {attempts.length > 0 && (
-                        <div className="attempt__panel attempt__panel--always">
-                            <h2 className="attempt__section-title">Previous Attempts</h2>
-                            <div className="attempt__attempts-list">
-                                {attempts.slice(0, 10).map((a, i) => (
-                                    <div key={a._id || i} className={`attempt__attempt-item ${a.isCorrect ? 'attempt__attempt-item--correct' : ''}`}>
-                                        <span className="attempt__attempt-status">
-                                            {a.isCorrect ? '✅' : '❌'}
-                                        </span>
-                                        <code className="attempt__attempt-query">{a.query}</code>
-                                        <span className="attempt__attempt-time">
-                                            {new Date(a.createdAt).toLocaleString()}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };
