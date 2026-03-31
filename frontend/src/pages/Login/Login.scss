@@ -42,6 +42,39 @@
         margin-bottom: $spacing-md;
     }
 
+    &__roles {
+        display: flex;
+        gap: $spacing-sm;
+        margin-bottom: $spacing-md;
+    }
+
+    &__role-btn {
+        flex: 1;
+        padding: $spacing-xs $spacing-sm;
+        border: 1px solid $color-border;
+        background: $color-white;
+        color: $color-muted;
+        border-radius: $radius-sm;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s ease;
+
+        &:hover {
+            border-color: $color-black;
+            color: $color-black;
+        }
+
+        &--active {
+            background: $color-black;
+            color: $color-white;
+            border-color: $color-black;
+
+            &:hover {
+                color: $color-white;
+            }
+        }
+    }
+
     &__field {
         margin-bottom: $spacing-md;
     }
