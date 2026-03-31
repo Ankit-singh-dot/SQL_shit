@@ -37,45 +37,104 @@ const compareResults = (userRows, expectedRows) => {
     return true;
 };
 
-// POST /api/attempts — save attempt with server-side verification
-router.post('/', auth, async (req, res) => {
-    const { assignmentId, query, result } = req.body;
+// POST /api/attempts/verify — check a single coding query without saving
+router.post('/verify', auth, async (req, res) => {
+    const { assignmentId, questionIndex, query, result } = req.body;
+    try {
+        const assignment = await Assignment.findById(assignmentId);
+        if (!assignment || !assignment.codingQuestions[questionIndex]) {
+            return res.status(404).json({ error: 'Question not found' });
+        }
+        
+        const question = assignment.codingQuestions[questionIndex];
+        const pool = getPGPool();
+        const client = await pool.connect();
+        let isCorrect = false;
+        
+        try {
+            await client.query('SET statement_timeout = 4000');
+            const expectedResult = await client.query(question.expectedQuery);
+            const userResult = await client.query(query);
+            isCorrect = compareResults(userResult.rows, expectedResult.rows);
+        } catch (err) {
+            // Execution failed or parse error, so it's incorrect
+        } finally {
+            client.release();
+        }
+        
+        res.json({ isCorrect });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
-    if (!assignmentId || !query) {
-        return res.status(400).json({ error: 'assignmentId and query are required.' });
+// POST /api/attempts — submit entire assignment
+router.post('/', auth, async (req, res) => {
+    const { assignmentId, mcqAnswers, codingAnswers } = req.body;
+
+    if (!assignmentId) {
+        return res.status(400).json({ error: 'assignmentId is required.' });
     }
 
     try {
-        // Fetch the assignment to get the expected query
         const assignment = await Assignment.findById(assignmentId);
-        let isCorrect = false;
+        if (!assignment) return res.status(404).json({ error: 'Assignment not found.' });
 
-        if (assignment && assignment.expectedQuery) {
-            // Execute the expected query to get reference results
-            const pool = getPGPool();
-            const client = await pool.connect();
-            try {
-                await client.query('SET statement_timeout = 4000');
-                const expectedResult = await client.query(assignment.expectedQuery);
+        let score = 0;
+        let totalMaxScore = (assignment.mcqs?.length || 0) + (assignment.codingQuestions?.length || 0);
 
-                // Compare user's result with expected result
-                if (result && result.rows) {
-                    isCorrect = compareResults(result.rows, expectedResult.rows);
+        // Process MCQs
+        const processedMcqs = (mcqAnswers || []).map(ans => {
+            const question = assignment.mcqs[ans.questionIndex];
+            const isCorrect = question && question.correctOptionIndex === ans.selectedOptionIndex;
+            if (isCorrect) score += 1;
+            return {
+                questionIndex: ans.questionIndex,
+                selectedOptionIndex: ans.selectedOptionIndex,
+                isCorrect: !!isCorrect
+            };
+        });
+
+        // Process Coding Questions
+        const pool = getPGPool();
+        const client = await pool.connect();
+        const processedCoding = [];
+
+        try {
+            await client.query('SET statement_timeout = 4000');
+            for (const ans of (codingAnswers || [])) {
+                const question = assignment.codingQuestions[ans.questionIndex];
+                let isCorrect = false;
+
+                if (question && question.expectedQuery && ans.query) {
+                    try {
+                        const expectedResult = await client.query(question.expectedQuery);
+                        const userResult = await client.query(ans.query);
+                        isCorrect = compareResults(userResult.rows, expectedResult.rows);
+                    } catch (err) {
+                        isCorrect = false; // execution failed
+                    }
                 }
-            } catch (err) {
-                // If expected query fails, can't verify — leave as false
-                console.error('Verification error:', err.message);
-            } finally {
-                client.release();
+                
+                if (isCorrect) score += 1;
+                processedCoding.push({
+                    questionIndex: ans.questionIndex,
+                    query: ans.query,
+                    isCorrect: !!isCorrect
+                });
             }
+        } finally {
+            client.release();
         }
 
         const attempt = await Attempt.create({
             userId: req.userId,
             assignmentId,
-            query,
-            result,
-            isCorrect,
+            mcqAnswers: processedMcqs,
+            codingAnswers: processedCoding,
+            score,
+            totalMaxScore,
+            isFullyCorrect: totalMaxScore > 0 && score === totalMaxScore
         });
 
         res.status(201).json(attempt);

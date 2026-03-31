@@ -3,11 +3,11 @@ const Assignment = require('../models/Assignment');
 const User = require('../models/User');
 const Attempt = require('../models/Attempt');
 const SharedTable = require('../models/SharedTable');
-const { auth, adminOnly } = require('../middleware/auth');
+const { auth, teacherOrAdmin, adminOnly } = require('../middleware/auth');
 const { getPGPool } = require('../config/db');
 
-// All admin routes require authentication + admin role
-router.use(auth, adminOnly);
+// All admin routes require authentication + teacherOrAdmin role
+router.use(auth, teacherOrAdmin);
 
 // ─── Helpers ──────────────────────────────────────────────
 
@@ -101,7 +101,8 @@ router.get('/stats', async (req, res) => {
 // GET /api/admin/assignments
 router.get('/assignments', async (req, res) => {
     try {
-        const assignments = await Assignment.find().sort({ createdAt: -1 });
+        const query = req.user.role === 'admin' ? {} : { createdBy: req.user._id };
+        const assignments = await Assignment.find(query).sort({ createdAt: -1 });
         res.json(assignments);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -114,6 +115,9 @@ router.get('/assignments/:id', async (req, res) => {
         const assignment = await Assignment.findById(req.params.id);
         if (!assignment)
             return res.status(404).json({ error: 'Assignment not found' });
+        if (req.user.role !== 'admin' && String(assignment.createdBy) !== String(req.user._id)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
         res.json(assignment);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -122,7 +126,7 @@ router.get('/assignments/:id', async (req, res) => {
 
 // POST /api/admin/assignments
 router.post('/assignments', async (req, res) => {
-    const { title, description, difficulty, category, timeLimit, tables, expectedQuery, hints, tableMode, sharedTableNames } =
+    const { title, description, difficulty, category, mcqTimeLimit, codingTimeLimit, tables, mcqs, codingQuestions, tableMode, sharedTableNames } =
         req.body;
 
     try {
@@ -148,12 +152,14 @@ router.post('/assignments', async (req, res) => {
             description,
             difficulty: difficulty || 'Easy',
             category: category || 'Basics',
-            timeLimit: timeLimit || 0,
+            mcqTimeLimit: mcqTimeLimit || 0,
+            codingTimeLimit: codingTimeLimit || 0,
             tables: finalTables,
             tableMode: tableMode || 'custom',
             sharedTableNames: tableMode === 'existing' ? sharedTableNames : [],
-            expectedQuery: expectedQuery || '',
-            hints: hints || [],
+            mcqs: mcqs || [],
+            codingQuestions: codingQuestions || [],
+            createdBy: req.user._id,
         });
 
         // 2. Only create PG tables for custom mode (shared tables already exist)
@@ -169,22 +175,26 @@ router.post('/assignments', async (req, res) => {
 
 // PUT /api/admin/assignments/:id
 router.put('/assignments/:id', async (req, res) => {
-    const { title, description, difficulty, category, timeLimit, tables, expectedQuery, hints, tableMode, sharedTableNames } =
+    const { title, description, difficulty, category, mcqTimeLimit, codingTimeLimit, tables, mcqs, codingQuestions, tableMode, sharedTableNames } =
         req.body;
 
     try {
         const assignment = await Assignment.findById(req.params.id);
         if (!assignment)
             return res.status(404).json({ error: 'Assignment not found' });
+        if (req.user.role !== 'admin' && String(assignment.createdBy) !== String(req.user._id)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
 
         // Update fields
         if (title) assignment.title = title;
         if (description) assignment.description = description;
         if (difficulty) assignment.difficulty = difficulty;
         if (category) assignment.category = category;
-        if (timeLimit !== undefined) assignment.timeLimit = timeLimit;
-        if (hints) assignment.hints = hints;
-        if (expectedQuery !== undefined) assignment.expectedQuery = expectedQuery;
+        if (mcqTimeLimit !== undefined) assignment.mcqTimeLimit = mcqTimeLimit;
+        if (codingTimeLimit !== undefined) assignment.codingTimeLimit = codingTimeLimit;
+        if (mcqs) assignment.mcqs = mcqs;
+        if (codingQuestions) assignment.codingQuestions = codingQuestions;
 
         // Handle table mode change or table update
         if (tableMode) assignment.tableMode = tableMode;
@@ -216,6 +226,9 @@ router.delete('/assignments/:id', async (req, res) => {
         const assignment = await Assignment.findById(req.params.id);
         if (!assignment)
             return res.status(404).json({ error: 'Assignment not found' });
+        if (req.user.role !== 'admin' && String(assignment.createdBy) !== String(req.user._id)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
 
         // Only drop PG tables if they were custom (not shared)
         if (assignment.tableMode !== 'existing') {
