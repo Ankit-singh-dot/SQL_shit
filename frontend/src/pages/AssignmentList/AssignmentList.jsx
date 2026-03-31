@@ -96,8 +96,8 @@ const AssignmentList = () => {
                                 {a.category && (
                                     <span className="assignment-card__cat">{a.category}</span>
                                 )}
-                                {a.timeLimit > 0 && (
-                                    <span className="assignment-card__timer">⏱ {a.timeLimit}s</span>
+                                {(a.mcqTimeLimit > 0 || a.codingTimeLimit > 0) && (
+                                    <span className="assignment-card__timer">⏱ {Math.floor(((a.mcqTimeLimit || 0) + (a.codingTimeLimit || 0)) / 60)}m</span>
                                 )}
                                 {token && (
                                     <button
