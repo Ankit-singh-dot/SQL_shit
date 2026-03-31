@@ -12,10 +12,18 @@ const generateToken = (user) => {
 
 // POST /api/auth/signup
 router.post('/signup', async (req, res) => {
-    const { username, email, password } = req.body;
+    const { username, email, password, role, adminCode } = req.body;
 
     if (!username || !email || !password) {
         return res.status(400).json({ error: 'All fields are required.' });
+    }
+
+    let assignedRole = role === 'teacher' ? 'teacher' : 'user';
+    
+    // Check for admin upgrade
+    const expectedAdminSecret = process.env.ADMIN_SECRET || 'supersecret';
+    if (adminCode && adminCode === expectedAdminSecret) {
+        assignedRole = 'admin';
     }
 
     try {
@@ -24,7 +32,7 @@ router.post('/signup', async (req, res) => {
             return res.status(400).json({ error: 'User already exists.' });
         }
 
-        const user = await User.create({ username, email, password });
+        const user = await User.create({ username, email, password, role: assignedRole });
         const token = generateToken(user);
 
         res.status(201).json({
